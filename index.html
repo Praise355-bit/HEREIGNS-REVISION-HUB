@@ -805,6 +805,7 @@ body {
 .incorrect-answer { font-size: 12.5px; color: var(--blue-dark); margin-bottom: 4px; }
 .correct-answer { font-size: 12.5px; color: var(--blue-light); margin-bottom: 8px; }
 .incorrect-explain { font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding-top: 8px; border-top: 1px solid rgba(30,58,138,0.2); }
+.incorrect-item .btn-secondary.ask-tutor-btn { margin-top: 10px; padding: 8px 14px; font-size: 12.5px; }
 
 .suggest-section {
   margin-top: 20px;
@@ -1238,6 +1239,87 @@ body {
   background-color: transparent;
   color: black;
 }
+
+/* =========================================================
+   DAILY GOALS
+   ========================================================= */
+.daily-goals-card {
+  padding: 22px 24px;
+  background: var(--grad-card);
+  border: 2px solid rgba(37,99,235,0.25);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+.daily-goals-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.daily-goals-head h3 {
+  font-family: var(--font-display); font-size: 15px; font-weight: 700;
+  background: var(--grad-primary);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.daily-goals-bonus {
+  font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+  background: rgba(37,99,235,0.2); border: 1px solid rgba(37,99,235,0.4); color: var(--blue-bright);
+}
+.daily-goal-list { display: flex; flex-direction: column; gap: 12px; }
+.daily-goal-item { display: flex; align-items: center; gap: 12px; }
+.daily-goal-check {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(37,99,235,0.35);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; background: var(--bg-surface); color: transparent;
+  transition: all 0.25s;
+}
+.daily-goal-item.done .daily-goal-check { background: var(--blue-light); border-color: var(--blue-light); color: #fff; box-shadow: 0 0 14px rgba(59,130,246,0.5); }
+.daily-goal-body { flex: 1; }
+.daily-goal-title { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.daily-goal-title small { color: var(--text-secondary); font-weight: 500; }
+.daily-goal-item.done .daily-goal-title { color: var(--blue-light); }
+.daily-goal-track { height: 7px; background: rgba(255,255,255,0.07); border-radius: 20px; margin-top: 6px; overflow: hidden; }
+.daily-goal-fill { height: 100%; background: var(--grad-progress); border-radius: 20px; transition: width 0.5s; }
+
+/* =========================================================
+   AI TUTOR
+   ========================================================= */
+.tutor-wrap { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h) - 140px); min-height: 420px; }
+.tutor-messages {
+  flex: 1; overflow-y: auto; padding: 6px 4px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.tutor-msg { display: flex; gap: 10px; max-width: 88%; }
+.tutor-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.tutor-msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  background: var(--grad-primary); box-shadow: 0 0 14px rgba(37,99,235,0.3);
+}
+.tutor-msg.user .tutor-msg-avatar { background: var(--bg-card-hover); border: 1.5px solid var(--border-strong); }
+.tutor-msg-bubble {
+  padding: 12px 16px; border-radius: var(--radius-md);
+  font-size: 14px; line-height: 1.65; white-space: pre-wrap;
+  background: var(--bg-card); border: 1.5px solid var(--border);
+}
+.tutor-msg.assistant .tutor-msg-bubble { border-top-left-radius: 4px; }
+.tutor-msg.user .tutor-msg-bubble { border-top-right-radius: 4px; background: rgba(37,99,235,0.16); border-color: rgba(37,99,235,0.35); }
+.tutor-msg-bubble.typing { display: flex; gap: 4px; align-items: center; padding: 14px 18px; }
+.tutor-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-bright); animation: tutorDot 1s infinite; }
+.tutor-dot:nth-child(2) { animation-delay: 0.15s; } .tutor-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes tutorDot { 0%,60%,100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.tutor-input-row {
+  display: flex; gap: 10px; padding-top: 14px; border-top: 1.5px solid rgba(37,99,235,0.15);
+}
+.tutor-input-row input { flex: 1; }
+.tutor-input-row button { width: auto; padding: 0 22px; }
+.tutor-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.tutor-suggest-chip {
+  padding: 8px 14px; border-radius: 20px; font-size: 12.5px; cursor: pointer;
+  background: var(--bg-card); border: 1.5px solid rgba(37,99,235,0.25); color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.tutor-suggest-chip:hover { border-color: var(--blue); color: var(--blue-bright); box-shadow: 0 0 16px rgba(37,99,235,0.2); }
+.tutor-subject-select { width: 200px; }
+.tutor-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.tutor-clear-btn { margin-left: auto; width: auto; padding: 8px 14px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -1381,6 +1463,9 @@ body {
       <div class="nav-item" data-page="notes">
         <span class="nav-icon">📝</span> Notes
       </div>
+      <div class="nav-item" data-page="tutor">
+        <span class="nav-icon">🤖</span> AI Tutor
+      </div>
       <div class="nav-section-label">Progress</div>
       <div class="nav-item" data-page="analytics">
         <span class="nav-icon">📊</span> Analytics
@@ -1426,6 +1511,16 @@ body {
           <h2 id="dash-greeting">Good morning! 👋</h2>
           <p id="dash-subtext">Here's your study overview</p>
         </div>
+
+        <!-- Daily Goals -->
+        <div class="daily-goals-card">
+          <div class="daily-goals-head">
+            <h3>🎯 Today's Goals</h3>
+            <span class="daily-goals-bonus" id="daily-goals-bonus-pill">+30 XP bonus</span>
+          </div>
+          <div class="daily-goal-list" id="daily-goal-list"></div>
+        </div>
+
         <div class="stats-grid">
           <div class="stat-card violet">
             <span class="stat-icon">🧩</span>
@@ -1580,6 +1675,32 @@ body {
         </div>
       </section>
 
+      <!-- ========== AI TUTOR ========== -->
+      <section class="page" id="page-tutor">
+        <div class="page-header">
+          <h2>AI Tutor</h2>
+          <p>Ask anything about your subjects — your personal WAEC/NECO study tutor</p>
+        </div>
+        <div class="tutor-topbar">
+          <select class="form-select tutor-subject-select" id="tutor-subject-select">
+            <option value="">General / Any Subject</option>
+          </select>
+          <button class="btn-secondary tutor-clear-btn" id="btn-tutor-clear">🗑️ Clear Chat</button>
+        </div>
+        <div class="tutor-wrap">
+          <div class="tutor-messages" id="tutor-messages"></div>
+          <div class="tutor-suggestions" id="tutor-suggestions">
+            <span class="tutor-suggest-chip" data-q="Explain this topic simply">Explain this topic simply</span>
+            <span class="tutor-suggest-chip" data-q="Give me a WAEC-style practice question">Give me a practice question</span>
+            <span class="tutor-suggest-chip" data-q="Help me create a revision plan">Help me create a revision plan</span>
+          </div>
+          <div class="tutor-input-row">
+            <input class="form-input" id="tutor-input" type="text" placeholder="Ask your tutor anything…" />
+            <button class="btn-primary" id="btn-tutor-send" style="width:auto;">Send</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ========== QUIZ ENGINE ========== -->
       <section class="page" id="page-quiz">
         <div class="quiz-header">
@@ -1610,6 +1731,9 @@ body {
             <ul class="options-list" id="options-list"></ul>
             <div class="explanation-box" id="explanation-box">
               <strong>💡 Explanation:</strong> <span id="explanation-text"></span>
+              <div style="margin-top:10px;">
+                <button class="btn-secondary" id="btn-ask-tutor-quiz" style="padding:8px 14px;font-size:12.5px;">🤖 Ask AI Tutor to Explain More</button>
+              </div>
             </div>
           </div>
 
@@ -1780,8 +1904,8 @@ body {
       <button class="mobile-nav-item" data-page="notes">
         <span class="mn-icon">📝</span>Notes
       </button>
-      <button class="mobile-nav-item" data-page="analytics">
-        <span class="mn-icon">📊</span>Stats
+      <button class="mobile-nav-item" data-page="tutor">
+        <span class="mn-icon">🤖</span>Tutor
       </button>
       <button class="mobile-nav-item" data-page="settings">
         <span class="mn-icon">⚙️</span>More
@@ -1861,7 +1985,6 @@ const QUOTES = [
   { text: "The beautiful thing about learning is nobody can take it away from you.", author: "B.B. King" },
   { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
   { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
-  // Additional quotes
   { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
   { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
   { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
@@ -1900,6 +2023,9 @@ const ACHIEVEMENTS_CONFIG = [
   { id: 'flashcard_maker', name: 'Card Creator',   icon: '🗃️', desc: 'Generate flashcards for 3 notes' },
   { id: 'flashcard_master', name: 'Flashcard Master', icon: '🏅', desc: 'Mark 20 flashcards as known' },
   { id: 'pdf_importer',  name: 'Digitizer',        icon: '📄', desc: 'Import a note from a PDF' },
+  { id: 'goal_streak_3', name: 'Goal Getter',      icon: '🎯', desc: 'Complete all daily goals 3 days in a row' },
+  { id: 'goal_streak_7', name: 'Consistency King',  icon: '👑', desc: 'Complete all daily goals 7 days in a row' },
+  { id: 'tutor_curious', name: 'Curious Mind',      icon: '🤖', desc: 'Ask the AI Tutor 10 questions' },
 ];
 
 const Store = {
@@ -1924,6 +2050,10 @@ const Store = {
   setNotes: (n)   => Store.set('rh_notes', n),
   getBookmarks: () => Store.get('rh_bookmarks', []),
   setBookmarks: (b) => Store.set('rh_bookmarks', b),
+  getDaily: () => Store.get('rh_daily', null),
+  setDaily: (d) => Store.set('rh_daily', d),
+  getTutorChat: () => Store.get('rh_tutor_chat', []),
+  setTutorChat: (c) => Store.set('rh_tutor_chat', c),
 };
 
 const Voice = {
@@ -2029,6 +2159,12 @@ const Groq = {
     const prompt = `Explain the following${subjectLabel ? ` ${subjectLabel}` : ''} content in the simplest possible terms, as if to a much younger student. Use short sentences and a relatable everyday example if helpful. Keep it under 120 words.\n\n--- CONTENT ---\n${text.slice(0, 4000)}\n\nReturn ONLY the simplified explanation text, no preamble.`.trim();
     const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 400 });
     return raw.trim();
+  },
+  async tutorReply(history, subjectLabel, studentClass) {
+    const convo = history.map(m => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`).join('\n');
+    const prompt = `You are a warm, patient, expert Nigerian secondary school tutor helping a ${studentClass || ''} student prepare for WAEC/NECO exams${subjectLabel ? ` in ${subjectLabel}` : ''}. Continue the conversation below naturally. Keep answers clear, encouraging, exam-focused, and not overly long (use short paragraphs or bullet points where helpful). If the student asks for practice questions, include the correct answer and a brief explanation.\n\n--- CONVERSATION SO FAR ---\n${convo}\n\nRespond ONLY as the Tutor's next message, no preamble, no "Tutor:" prefix.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.65, max_tokens: 900 });
+    return raw.trim();
   }
 };
 const Confetti = {
@@ -2110,7 +2246,7 @@ const UI = {
     if (target) target.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
     document.querySelectorAll('.mobile-nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
-    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', tutor:'AI Tutor', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[pageId] || 'Revision Hub AI';
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('show');
@@ -2120,12 +2256,187 @@ const UI = {
     if (pageId === 'achievements') App.renderAchievements();
     if (pageId === 'subjects')     App.renderSubjects();
     if (pageId === 'notes')        App.renderNotes();
+    if (pageId === 'tutor')        Tutor.render();
   },
   formatTime(s) { const m = Math.floor(s / 60); const sec = s % 60; return m > 0 ? `${m}m ${sec}s` : `${sec}s`; },
   initials(name) { return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); },
   openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('show'); },
   closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('show'); },
   escapeHtml(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+};
+
+/* ===================== DAILY GOALS ===================== */
+const DailyGoals = {
+  TARGETS: {
+    questions: 15,
+    quizzes: 1,
+    tutor: 1,
+  },
+  todayStr() { return new Date().toDateString(); },
+  getState() {
+    let d = Store.getDaily();
+    const today = this.todayStr();
+    if (!d || d.date !== today) {
+      // Roll over: check if yesterday's goals were all completed, to maintain a goal streak
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      let goalStreak = (d && d.date === yesterday && d.allDoneClaimed) ? (d.goalStreak || 0) : 0;
+      d = { date: today, questions: 0, quizzes: 0, tutorUsed: 0, allDoneClaimed: false, goalStreak };
+      Store.setDaily(d);
+    }
+    return d;
+  },
+  save(d) { Store.setDaily(d); },
+  recordQuestions(count) {
+    const d = this.getState();
+    d.questions += count;
+    this.save(d);
+    this.checkAllDone(d);
+  },
+  recordQuiz() {
+    const d = this.getState();
+    d.quizzes += 1;
+    this.save(d);
+    this.checkAllDone(d);
+  },
+  recordTutorUse() {
+    const d = this.getState();
+    d.tutorUsed += 1;
+    this.save(d);
+    this.checkAllDone(d);
+  },
+  isAllDone(d) {
+    return d.questions >= this.TARGETS.questions && d.quizzes >= this.TARGETS.quizzes && d.tutorUsed >= this.TARGETS.tutor;
+  },
+  checkAllDone(d) {
+    if (this.isAllDone(d) && !d.allDoneClaimed) {
+      d.allDoneClaimed = true;
+      d.goalStreak = (d.goalStreak || 0) + 1;
+      this.save(d);
+      const stats = Store.getStats();
+      stats.xp += 30;
+      Store.setStats(stats);
+      UI.toast('🎯 All daily goals complete! +30 bonus XP', 'success', 4000);
+      App.updateSidebarStats();
+      const achievements = stats.achievements || [];
+      const unlock = (id) => { if (!achievements.includes(id)) { achievements.push(id); const a = ACHIEVEMENTS_CONFIG.find(x => x.id === id); if (a) UI.toast(`🏅 Achievement unlocked: ${a.name}!`, 'success', 4000); } };
+      if (d.goalStreak >= 3) unlock('goal_streak_3');
+      if (d.goalStreak >= 7) unlock('goal_streak_7');
+      stats.achievements = achievements; Store.setStats(stats);
+    }
+    if (document.getElementById('page-dashboard') && document.getElementById('page-dashboard').classList.contains('active')) {
+      this.renderCard();
+    }
+  },
+  renderCard() {
+    const d = this.getState();
+    const list = document.getElementById('daily-goal-list');
+    if (!list) return;
+    const goals = [
+      { key: 'questions', icon: '🧩', label: 'Answer questions', current: d.questions, target: this.TARGETS.questions },
+      { key: 'quizzes',   icon: '📚', label: 'Complete a quiz',  current: d.quizzes,   target: this.TARGETS.quizzes },
+      { key: 'tutor',     icon: '🤖', label: 'Ask the AI Tutor', current: d.tutorUsed, target: this.TARGETS.tutor },
+    ];
+    list.innerHTML = goals.map(g => {
+      const done = g.current >= g.target;
+      const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+      return `<div class="daily-goal-item ${done ? 'done' : ''}">
+        <div class="daily-goal-check">${done ? '✓' : ''}</div>
+        <div class="daily-goal-body">
+          <div class="daily-goal-title"><span>${g.icon} ${g.label}</span><small>${Math.min(g.current,g.target)}/${g.target}</small></div>
+          <div class="daily-goal-track"><div class="daily-goal-fill" style="width:${pct}%"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+    const bonusPill = document.getElementById('daily-goals-bonus-pill');
+    if (bonusPill) {
+      if (d.allDoneClaimed) { bonusPill.textContent = `🔥 ${d.goalStreak || 1}-day goal streak`; }
+      else { bonusPill.textContent = '+30 XP bonus'; }
+    }
+  }
+};
+
+/* ===================== AI TUTOR ===================== */
+const Tutor = {
+  sending: false,
+  init() {
+    document.getElementById('btn-tutor-send').addEventListener('click', () => this.send());
+    document.getElementById('tutor-input').addEventListener('keydown', e => { if (e.key === 'Enter') this.send(); });
+    document.getElementById('btn-tutor-clear').addEventListener('click', () => {
+      if (confirm('Clear the whole tutor conversation?')) { Store.setTutorChat([]); this.render(); }
+    });
+    document.getElementById('tutor-suggestions').addEventListener('click', e => {
+      const chip = e.target.closest('.tutor-suggest-chip'); if (!chip) return;
+      document.getElementById('tutor-input').value = chip.dataset.q;
+      this.send();
+    });
+    const subSelect = document.getElementById('tutor-subject-select');
+    if (subSelect.children.length <= 1) {
+      const names = Array.from(new Set(SUBJECTS.JSS.concat(SUBJECTS.SS).map(s => s.name)));
+      subSelect.innerHTML = `<option value="">General / Any Subject</option>` + names.map(n => `<option value="${n}">${n}</option>`).join('');
+    }
+  },
+  render() {
+    const chat = Store.getTutorChat();
+    const wrap = document.getElementById('tutor-messages');
+    if (chat.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🤖</span>Ask me anything about your subjects — I'm here to help you revise!</div>`;
+    } else {
+      wrap.innerHTML = chat.map(m => `
+        <div class="tutor-msg ${m.role}">
+          <div class="tutor-msg-avatar">${m.role === 'user' ? '🧑‍🎓' : '🤖'}</div>
+          <div class="tutor-msg-bubble">${UI.escapeHtml(m.content)}</div>
+        </div>`).join('');
+    }
+    wrap.scrollTop = wrap.scrollHeight;
+  },
+  openWithPrompt(text, subject) {
+    UI.navigate('tutor');
+    if (subject) {
+      const sel = document.getElementById('tutor-subject-select');
+      if ([...sel.options].some(o => o.value === subject)) sel.value = subject;
+    }
+    document.getElementById('tutor-input').value = text;
+    this.send();
+  },
+  async send() {
+    if (this.sending) return;
+    const input = document.getElementById('tutor-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    const chat = Store.getTutorChat();
+    chat.push({ role: 'user', content: text });
+    Store.setTutorChat(chat);
+    this.render();
+    this.sending = true;
+    const wrap = document.getElementById('tutor-messages');
+    const typingEl = document.createElement('div');
+    typingEl.className = 'tutor-msg assistant';
+    typingEl.innerHTML = `<div class="tutor-msg-avatar">🤖</div><div class="tutor-msg-bubble typing"><span class="tutor-dot"></span><span class="tutor-dot"></span><span class="tutor-dot"></span></div>`;
+    wrap.appendChild(typingEl);
+    wrap.scrollTop = wrap.scrollHeight;
+    const subject = document.getElementById('tutor-subject-select').value;
+    const profile = Store.getProfile();
+    try {
+      const reply = await Groq.tutorReply(chat.slice(-12), subject, profile ? profile.class : '');
+      const updated = Store.getTutorChat();
+      updated.push({ role: 'assistant', content: reply });
+      Store.setTutorChat(updated);
+      this.render();
+      DailyGoals.recordTutorUse();
+      const stats = Store.getStats();
+      const tutorMsgCount = updated.filter(m => m.role === 'user').length;
+      if (tutorMsgCount >= 10) {
+        const achievements = stats.achievements || [];
+        if (!achievements.includes('tutor_curious')) { achievements.push('tutor_curious'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Curious Mind!', 'success', 4000); }
+      }
+    } catch (err) {
+      typingEl.remove();
+      UI.toast('Tutor error: ' + err.message, 'error');
+    } finally {
+      this.sending = false;
+    }
+  }
 };
 
 const Quiz = {
@@ -2212,6 +2523,7 @@ const Quiz = {
     });
     document.getElementById('explanation-text').textContent = q.explanation;
     document.getElementById('explanation-box').classList.add('show');
+    if (!this.reviewMode) DailyGoals.recordQuestions(1);
     const settings = Store.getSettings();
     if (settings.sound) this.playSound(key === q.answer);
     if (settings.voice) {
@@ -2271,6 +2583,7 @@ const Quiz = {
     if (stats.history.length > 50) stats.history = stats.history.slice(-50);
     if (!stats.studiedSubjects.includes(this.subject)) { stats.studiedSubjects.push(this.subject); }
     Store.setStats(stats);
+    DailyGoals.recordQuiz();
     const profile = Store.getProfile(); const lb = Store.getLeaderboard();
     const existingIdx = lb.findIndex(e => e.name === profile.name && e.class === profile.class);
     const entry = { name: profile.name, class: profile.class, arm: profile.arm, score: pct, accuracy: Math.round((stats.correct / stats.totalQ) * 100), xp: stats.xp };
@@ -2341,7 +2654,7 @@ const App = {
   selectedSubject: null, selectedDifficulty: 'Easy', selectedCount: 10, currentClass: 'JSS1',
   _pendingNoteQuiz: null, _pendingFlashcard: null,
   init() {
-    Voice.init(); Confetti.init(); this.applySettings();
+    Voice.init(); Confetti.init(); this.applySettings(); Tutor.init();
     const profile = Store.getProfile();
     if (!profile) { document.getElementById('page-register').style.display = 'flex'; }
     else { this.startApp(); }
@@ -2374,6 +2687,14 @@ const App = {
       btn.classList.add('speaking'); btn.textContent = '⏸ Stop';
       Voice.speak(`${q.question}. A: ${q.options.A}. B: ${q.options.B}. C: ${q.options.C}. D: ${q.options.D}.`, () => { btn.classList.remove('speaking'); btn.textContent = '🔊 Read'; });
     });
+    document.getElementById('btn-ask-tutor-quiz').addEventListener('click', () => {
+      const q = Quiz.questions[Quiz.current]; if (!q) return;
+      const chosen = Quiz.answers[Quiz.current];
+      const prompt = chosen && chosen !== q.answer
+        ? `I got this question wrong: "${q.question}" — I chose ${chosen} (${q.options[chosen]}) but the correct answer is ${q.answer} (${q.options[q.answer]}). Can you explain this in more detail and give me a similar practice question?`
+        : `Can you explain this question in more detail: "${q.question}" (Answer: ${q.answer} — ${q.options[q.answer]})`;
+      Tutor.openWithPrompt(prompt, Quiz.subject);
+    });
     document.getElementById('btn-retry').addEventListener('click', () => { this.startQuizSession(); });
     document.getElementById('btn-new-quiz').addEventListener('click', () => UI.navigate('subjects'));
     document.getElementById('btn-to-dashboard').addEventListener('click', () => UI.navigate('dashboard'));
@@ -2390,7 +2711,7 @@ const App = {
     document.getElementById('font-size-select').addEventListener('change', (e) => { document.documentElement.style.setProperty('--fs-base', e.target.value); const settings = Store.getSettings(); settings.fontSize = e.target.value; Store.setSettings(settings); });
     document.getElementById('btn-reset').addEventListener('click', () => {
       if (confirm('⚠️ This will delete ALL your data. Are you sure?')) {
-        ['rh_profile','rh_stats','rh_leaderboard','rh_settings','rh_notes','rh_bookmarks'].forEach(k => Store.remove(k));
+        ['rh_profile','rh_stats','rh_leaderboard','rh_settings','rh_notes','rh_bookmarks','rh_daily','rh_tutor_chat'].forEach(k => Store.remove(k));
         location.reload();
       }
     });
@@ -2488,6 +2809,7 @@ const App = {
     const hour = new Date().getHours(); const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('dash-greeting').textContent = `${greet}, ${profile.name.split(' ')[0]}! 👋`;
     document.getElementById('dash-subtext').textContent = `${profile.class} ${profile.arm} • ${new Date().toDateString()}`;
+    DailyGoals.renderCard();
     const accuracy = stats.totalQ > 0 ? Math.round((stats.correct / stats.totalQ) * 100) : 0;
     document.getElementById('stat-quizzes').textContent  = stats.quizzes;
     document.getElementById('stat-accuracy').textContent = accuracy + '%';
@@ -2609,8 +2931,17 @@ const App = {
     const incorrectSection = document.getElementById('incorrect-section');
     if (wrong.length > 0) {
       incorrectSection.style.display = 'block';
-      document.getElementById('incorrect-list').innerHTML = wrong.map(({ q, chosen }) => `
-        <div class="incorrect-item"><div class="incorrect-q">${q.question}</div><div class="incorrect-answer">Your answer: ${chosen ? `${chosen}. ${q.options[chosen]}` : 'Skipped (timeout)'}</div><div class="correct-answer">✅ Correct: ${q.answer}. ${q.options[q.answer]}</div><div class="incorrect-explain">${q.explanation}</div></div>`).join('');
+      document.getElementById('incorrect-list').innerHTML = wrong.map(({ q, chosen }, i) => `
+        <div class="incorrect-item"><div class="incorrect-q">${q.question}</div><div class="incorrect-answer">Your answer: ${chosen ? `${chosen}. ${q.options[chosen]}` : 'Skipped (timeout)'}</div><div class="correct-answer">✅ Correct: ${q.answer}. ${q.options[q.answer]}</div><div class="incorrect-explain">${q.explanation}</div><button class="btn-secondary ask-tutor-btn" data-idx="${i}">🤖 Ask AI Tutor to Explain More</button></div>`).join('');
+      document.getElementById('incorrect-list').querySelectorAll('.ask-tutor-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const { q, chosen } = wrong[parseInt(btn.dataset.idx)];
+          const prompt = chosen
+            ? `I got this question wrong: "${q.question}" — I chose ${chosen} (${q.options[chosen]}) but the correct answer is ${q.answer} (${q.options[q.answer]}). Can you explain this in more detail and give me a similar practice question?`
+            : `I skipped this question (ran out of time): "${q.question}" (Answer: ${q.answer} — ${q.options[q.answer]}). Can you explain it and give me a similar practice question?`;
+          Tutor.openWithPrompt(prompt, Quiz.subject);
+        });
+      });
     } else { incorrectSection.style.display = 'none'; }
     const weakTopics = wrong.map(({ q }) => { const words = q.question.split(' '); return words.slice(0, 5).join(' ') + '…'; }).slice(0, 5);
     const suggestSection = document.getElementById('suggest-section');
@@ -2728,6 +3059,7 @@ const App = {
           <button class="btn-secondary" data-action="keyterms">🔑 Key Terms</button>
           <button class="btn-secondary" data-action="flashcards">${n.flashcards && n.flashcards.length ? '🗂️ Study Flashcards' : '🗂️ Generate Flashcards'}</button>
           <button class="btn-secondary" data-action="quiz">🧠 Quiz Me On This</button>
+          <button class="btn-secondary" data-action="tutor">🤖 Discuss with Tutor</button>
           <button class="btn-danger" data-action="delete" style="padding:8px 14px;font-size:12.5px;">🗑️ Delete</button>
         </div>
         <div class="note-qa-box" id="qa-box-${n.id}">
@@ -2875,6 +3207,10 @@ const App = {
       UI.openModal('note-quiz-modal');
       return;
     }
+    if (action === 'tutor') {
+      Tutor.openWithPrompt(`I'd like to go over my notes on ${note.subject}. Here's a summary:\n\n${(note.summary || note.rawText).slice(0, 1500)}\n\nCan you help me understand the trickiest parts and quiz me verbally on the key points?`, note.subject);
+      return;
+    }
   },
   renderKeyTerms(box, terms) {
     box.innerHTML = `<div class="keyterm-list">${terms.map(t => `<div class="keyterm-item"><span class="keyterm-term">${UI.escapeHtml(t.term)}</span><span class="keyterm-def">${UI.escapeHtml(t.definition)}</span></div>`).join('')}</div>`;
@@ -2914,6 +3250,8 @@ const DataManager = {
     const notes = Store.getNotes();
     const leaderboard = Store.getLeaderboard();
     const bookmarks = Store.getBookmarks();
+    const daily = Store.getDaily();
+    const tutorChat = Store.getTutorChat();
 
     const exportData = {
       version: 1,
@@ -2923,7 +3261,9 @@ const DataManager = {
       settings,
       notes,
       leaderboard,
-      bookmarks
+      bookmarks,
+      daily,
+      tutorChat
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -2977,6 +3317,8 @@ const DataManager = {
         if (importedData.notes) Store.setNotes(importedData.notes);
         if (importedData.leaderboard) Store.setLeaderboard(importedData.leaderboard);
         if (importedData.bookmarks) Store.setBookmarks(importedData.bookmarks);
+        if (importedData.daily) Store.setDaily(importedData.daily);
+        if (importedData.tutorChat) Store.setTutorChat(importedData.tutorChat);
 
         UI.toast('✅ Data imported successfully! Reloading…', 'success');
         setTimeout(() => { window.location.reload(); }, 1500);

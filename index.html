@@ -2050,7 +2050,7 @@ const Voice = {
   speaking: false,
   listening: false,
   _resumeTimer: null,
-  _onStateChange: null,
+  _stateListeners: [],
   _voices: [],
 
   init() {
@@ -2076,16 +2076,19 @@ const Voice = {
     this.enabled = !!settings.voice;
   },
 
-  onStateChange(cb) { this._onStateChange = cb; },
+  // Multiple screens (voice chat, notes discuss, voice quiz) can all care
+  // about mic/speaker state at once, so this is a list, not a single slot.
+  onStateChange(cb) { this._stateListeners.push(cb); },
+  _notify(val, kind) { this._stateListeners.forEach(cb => { try { cb(val, kind); } catch {} }); },
   _setSpeaking(val) {
     if (this.speaking === val) return;
     this.speaking = val;
-    if (this._onStateChange) this._onStateChange(val, 'speaking');
+    this._notify(val, 'speaking');
   },
   _setListening(val) {
     if (this.listening === val) return;
     this.listening = val;
-    if (this._onStateChange) this._onStateChange(val, 'listening');
+    this._notify(val, 'listening');
   },
 
   pickVoice() {

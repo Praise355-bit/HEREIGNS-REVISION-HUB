@@ -1381,6 +1381,13 @@ body {
       <div class="nav-item" data-page="notes">
         <span class="nav-icon">📝</span> Notes
       </div>
+      <div class="nav-section-label">AI Coach</div>
+      <div class="nav-item" data-page="chat">
+        <span class="nav-icon">🗣️</span> AI Study Buddy
+      </div>
+      <div class="nav-item" data-page="diagnostic">
+        <span class="nav-icon">🧪</span> Diagnostic Test
+      </div>
       <div class="nav-section-label">Progress</div>
       <div class="nav-item" data-page="analytics">
         <span class="nav-icon">📊</span> Analytics
@@ -1580,6 +1587,62 @@ body {
         </div>
       </section>
 
+      <!-- ========== AI STUDY BUDDY CHAT ========== -->
+      <section class="page" id="page-chat">
+        <div class="page-header">
+          <h2>🗣️ AI Study Buddy</h2>
+          <p>Chat naturally about how your studies are going — the AI listens for what's easy and what's hard, and uses that to personalize your quizzes.</p>
+        </div>
+        <div class="chat-layout">
+          <div class="chat-panel card">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-typing" id="chat-typing" style="display:none;">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="chat-input-row">
+              <input class="form-input" id="chat-input" type="text" placeholder="Tell your study buddy how revision is going…" autocomplete="off" />
+              <button class="btn-primary" id="btn-chat-send" style="width:auto;">Send</button>
+            </div>
+            <div class="chat-actions-row">
+              <button class="btn-secondary" id="btn-analyze-chat">🔍 Analyze My Progress</button>
+              <button class="btn-secondary" id="btn-clear-chat">🗑️ Clear Chat</button>
+            </div>
+          </div>
+          <div class="insights-panel card" id="insights-panel"></div>
+        </div>
+      </section>
+
+      <!-- ========== DIAGNOSTIC TEST ========== -->
+      <section class="page" id="page-diagnostic">
+        <div class="page-header">
+          <h2>🧪 Diagnostic Test</h2>
+          <p>A longer, timed test spanning multiple subjects at once — a great way to quickly map your strengths and weaknesses.</p>
+        </div>
+        <div class="quiz-config" style="margin-top:0;">
+          <h3>Select Subjects to Cover</h3>
+          <div class="subjects-grid" id="diagnostic-subjects-grid" style="margin-bottom:22px;"></div>
+          <div class="config-row">
+            <div class="option-group">
+              <label>Number of Questions</label>
+              <div class="pill-options" id="diagnostic-count-pills">
+                <button class="pill-option" data-count="20">20</button>
+                <button class="pill-option active" data-count="30">30</button>
+                <button class="pill-option" data-count="40">40</button>
+              </div>
+            </div>
+            <div class="option-group">
+              <label>Time Limit</label>
+              <div class="pill-options" id="diagnostic-time-pills">
+                <button class="pill-option" data-mins="20">20 min</button>
+                <button class="pill-option active" data-mins="30">30 min</button>
+                <button class="pill-option" data-mins="45">45 min</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" id="btn-start-diagnostic">Start Diagnostic Test →</button>
+        </div>
+      </section>
+
       <!-- ========== QUIZ ENGINE ========== -->
       <section class="page" id="page-quiz">
         <div class="quiz-header">
@@ -1652,6 +1715,11 @@ body {
           <button class="btn-secondary" id="btn-review-bookmarks" style="display:none;">⭐ Review Bookmarked</button>
           <button class="btn-secondary" id="btn-new-quiz">📚 New Quiz</button>
           <button class="btn-secondary" id="btn-to-dashboard">🏠 Dashboard</button>
+        </div>
+
+        <div class="chart-card" id="diagnostic-breakdown-card" style="display:none;margin-bottom:20px;">
+          <h3>🧪 Diagnostic Breakdown by Subject</h3>
+          <div class="bar-chart" id="diagnostic-breakdown-chart"></div>
         </div>
 
         <div class="suggest-section" id="suggest-section" style="display:none;">
@@ -1777,11 +1845,11 @@ body {
       <button class="mobile-nav-item" data-page="subjects">
         <span class="mn-icon">📚</span>Quiz
       </button>
+      <button class="mobile-nav-item" data-page="chat">
+        <span class="mn-icon">🗣️</span>Buddy
+      </button>
       <button class="mobile-nav-item" data-page="notes">
         <span class="mn-icon">📝</span>Notes
-      </button>
-      <button class="mobile-nav-item" data-page="analytics">
-        <span class="mn-icon">📊</span>Stats
       </button>
       <button class="mobile-nav-item" data-page="settings">
         <span class="mn-icon">⚙️</span>More
@@ -1880,6 +1948,9 @@ const ACHIEVEMENTS_CONFIG = [
   { id: 'flashcard_maker', name: 'Card Creator',   icon: '🗃️', desc: 'Generate flashcards for 3 notes' },
   { id: 'flashcard_master', name: 'Flashcard Master', icon: '🏅', desc: 'Mark 20 flashcards as known' },
   { id: 'pdf_importer',  name: 'Digitizer',        icon: '📄', desc: 'Import a note from a PDF' },
+  { id: 'first_chat',    name: 'Say Hello',        icon: '👋', desc: 'Send your first message to your AI Study Buddy' },
+  { id: 'self_aware',    name: 'Self Aware',       icon: '🔍', desc: 'Run your first progress analysis' },
+  { id: 'diagnostic_done', name: 'Fully Mapped',   icon: '🧪', desc: 'Complete a Diagnostic Test' },
 ];
 
 const Store = {
@@ -1904,6 +1975,10 @@ const Store = {
   setNotes: (n)   => Store.set('rh_notes', n),
   getBookmarks: () => Store.get('rh_bookmarks', []),
   setBookmarks: (b) => Store.set('rh_bookmarks', b),
+  getChatHistory: () => Store.get('rh_chat_history', []),
+  setChatHistory: (h) => Store.set('rh_chat_history', h),
+  getInsights: () => Store.get('rh_insights', { strengths: [], weaknesses: [], lastAnalyzed: null }),
+  setInsights: (i) => Store.set('rh_insights', i),
 };
 
 const Voice = {
@@ -1975,6 +2050,13 @@ const Groq = {
     if (!Array.isArray(parsed) || parsed.length === 0) { throw new Error('Invalid response from AI'); }
     return parsed;
   },
+  parseJsonObject(raw) {
+    let clean = raw.replace(/```json|```/gi, '').trim();
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) { clean = clean.slice(start, end + 1); }
+    return JSON.parse(clean);
+  },
   async generateQuestions(subject, difficulty, count, studentClass) {
     const prompt = `You are an expert and professional Nigerian secondary school teacher. Generate exactly ${count} high-quality multiple-choice questions for:\n- Subject: ${subject}\n- Class: ${studentClass}\n- Difficulty: ${difficulty}\n- Curriculum: Nigerian educational curriculum (WAEC/NECO standard)\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": {\n      "A": "First option",\n      "B": "Second option",\n      "C": "Third option",\n      "D": "Fourth option"\n    },\n    "answer": "A",\n    "explanation": "Detailed explanation of why A is correct and why others are wrong."\n  }\n]\n\nRules:\n- Questions must be appropriate for ${studentClass} students\n- ${difficulty === 'Easy' ? 'Keep questions foundational and straightforward' : difficulty === 'Medium' ? 'Include moderate application and understanding questions' : 'Include complex analysis, evaluation and higher-order thinking questions'}\n- All 4 options must be plausible\n- Explanations must be clear and educational\n- Generate exactly ${count} questions`.trim();
     const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 4096 });
@@ -2009,6 +2091,32 @@ const Groq = {
     const prompt = `Explain the following${subjectLabel ? ` ${subjectLabel}` : ''} content in the simplest possible terms, as if to a much younger student. Use short sentences and a relatable everyday example if helpful. Keep it under 120 words.\n\n--- CONTENT ---\n${text.slice(0, 4000)}\n\nReturn ONLY the simplified explanation text, no preamble.`.trim();
     const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 400 });
     return raw.trim();
+  },
+  async chatBuddy(history, studentContext) {
+    const convoText = history.map(m => `${m.role === 'user' ? 'Student' : 'You'}: ${m.content}`).join('\n');
+    const prompt = `You are a warm, encouraging AI study buddy for a Nigerian secondary school student${studentContext ? ` (${studentContext})` : ''}. Have a natural, supportive conversation. Ask how their revision is going, which subjects or topics feel easy or hard, and gently draw out specifics (e.g. "which part of Physics?"). Celebrate wins, and never make the student feel bad about struggling. Keep each reply short — 2 to 4 sentences — conversational, and end with a light follow-up question when it fits naturally.\n\n--- CONVERSATION SO FAR ---\n${convoText}\n\nYou:`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.8, max_tokens: 300 });
+    return raw.trim();
+  },
+  async analyzeConversation(history) {
+    const convoText = history.map(m => `${m.role === 'user' ? 'Student' : 'AI'}: ${m.content}`).join('\n');
+    const prompt = `Analyze this conversation between a Nigerian secondary school student and their AI study buddy. Identify the student's academic STRENGTHS (subjects/topics they seem confident or good at) and WEAKNESSES (subjects/topics they struggle with or express difficulty about) — based strictly on what was actually said, not guesses.\n\n--- CONVERSATION ---\n${convoText}\n\nReturn ONLY a valid JSON object (no markdown, no preamble) with this exact structure:\n{\n  "strengths": [ { "subject": "Subject name", "note": "short note on what they're good at" } ],\n  "weaknesses": [ { "subject": "Subject name", "note": "short note on what they struggle with" } ]\n}\n\nOnly include items with clear evidence in the conversation. Return empty arrays if nothing is clear.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.3, max_tokens: 800 });
+    const parsed = this.parseJsonObject(raw);
+    return { strengths: parsed.strengths || [], weaknesses: parsed.weaknesses || [] };
+  },
+  async generatePersonalizedQuestions(difficulty, count, studentClass, insights) {
+    const weakText = (insights.weaknesses || []).map(w => `${w.subject}: ${w.note}`).join('; ') || 'no specific weak points recorded yet — cover a broad, balanced set of core subjects';
+    const strongText = (insights.strengths || []).map(s => s.subject).join(', ') || 'none recorded yet';
+    const prompt = `You are an expert Nigerian secondary school teacher creating a PERSONALIZED practice quiz for a ${studentClass} student.\nTheir known weak areas (put most of the questions here): ${weakText}\nTheir known strong areas (include just a couple of lighter questions here to build confidence): ${strongText}\n\nGenerate exactly ${count} multiple-choice questions at ${difficulty} difficulty, weighted mostly toward the weak areas above, following WAEC/NECO Nigerian curriculum standards.\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "...",\n    "subject": "Which subject this question belongs to",\n    "options": {"A":"...","B":"...","C":"...","D":"..."},\n    "answer": "A",\n    "explanation": "..."\n  }\n]\n\nGenerate exactly ${count} questions.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 4096 });
+    return this.parseJsonArray(raw);
+  },
+  async generateDiagnosticTest(subjects, studentClass, count) {
+    const subjectList = subjects.join(', ');
+    const prompt = `You are an expert Nigerian secondary school examiner creating a DIAGNOSTIC TEST for a ${studentClass} student, to assess their current level across these subjects: ${subjectList}.\n\nGenerate exactly ${count} multiple-choice questions, spread as evenly as possible across the given subjects, mixing difficulty roughly 30% Easy, 40% Medium, 30% Hard, following WAEC/NECO Nigerian curriculum standards.\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "...",\n    "subject": "Which of the given subjects this belongs to (must match one exactly)",\n    "difficulty": "Easy|Medium|Hard",\n    "options": {"A":"...","B":"...","C":"...","D":"..."},\n    "answer": "A",\n    "explanation": "..."\n  }\n]\n\nGenerate exactly ${count} questions.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 4096 });
+    return this.parseJsonArray(raw);
   }
 };
 const Confetti = {
@@ -2090,7 +2198,7 @@ const UI = {
     if (target) target.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
     document.querySelectorAll('.mobile-nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
-    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', chat:'AI Study Buddy', diagnostic:'Diagnostic Test', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[pageId] || 'Revision Hub AI';
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('show');
@@ -2100,6 +2208,8 @@ const UI = {
     if (pageId === 'achievements') App.renderAchievements();
     if (pageId === 'subjects')     App.renderSubjects();
     if (pageId === 'notes')        App.renderNotes();
+    if (pageId === 'chat')         App.renderChatPage();
+    if (pageId === 'diagnostic')   App.renderDiagnosticPage();
   },
   formatTime(s) { const m = Math.floor(s / 60); const sec = s % 60; return m > 0 ? `${m}m ${sec}s` : `${sec}s`; },
   initials(name) { return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); },
@@ -2112,7 +2222,8 @@ const Quiz = {
   questions: [], current: 0, answers: {}, startTime: 0,
   timerInterval: null, timeLeft: 60, subject: '', difficulty: '', totalQuestions: 10, locked: false,
   fromNotes: false, bookmarked: {}, reviewMode: false,
-  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; clearInterval(this.timerInterval); },
+  overallMode: false, overallTimeLeft: 0, overallTimerStarted: false, isDiagnostic: false, isPersonalized: false,
+  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; this.overallMode = false; this.overallTimeLeft = 0; this.overallTimerStarted = false; this.isDiagnostic = false; this.isPersonalized = false; clearInterval(this.timerInterval); },
   startTimer() {
     this.timeLeft = 60; this.updateTimerDisplay();
     clearInterval(this.timerInterval);
@@ -2125,17 +2236,41 @@ const Quiz = {
       }
     }, 1000);
   },
+  startOverallTimer(totalSeconds) {
+    this.overallTimeLeft = totalSeconds; this.overallTimerStarted = true;
+    this.updateTimerDisplay();
+    clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      this.overallTimeLeft--; this.updateTimerDisplay();
+      if (this.overallTimeLeft <= 0) {
+        clearInterval(this.timerInterval);
+        for (let i = 0; i < this.questions.length; i++) { if (this.answers[i] === undefined) this.answers[i] = null; }
+        UI.toast("Time's up! Submitting your diagnostic test…", 'info');
+        setTimeout(() => this.finish(), 600);
+      }
+    }, 1000);
+  },
   updateTimerDisplay() {
     const el = document.getElementById('timer-display');
-    if (el) { el.textContent = this.timeLeft; el.parentElement.classList.toggle('timer-warn', this.timeLeft <= 10); }
+    if (!el) return;
+    if (this.overallMode) {
+      const m = Math.floor(this.overallTimeLeft / 60); const s = this.overallTimeLeft % 60;
+      el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      el.parentElement.classList.toggle('timer-warn', this.overallTimeLeft <= 60);
+    } else {
+      el.textContent = this.timeLeft;
+      el.parentElement.classList.toggle('timer-warn', this.timeLeft <= 10);
+    }
   },
   renderQuestion() {
     const q = this.questions[this.current]; if (!q) return;
     this.locked = false;
-    document.getElementById('q-subject-pill').textContent = this.subject;
+    const displaySubject = q.subject || this.subject;
+    const displayDiff = q.difficulty || this.difficulty;
+    document.getElementById('q-subject-pill').textContent = displaySubject;
     const diffPill = document.getElementById('q-diff-pill');
-    diffPill.textContent = this.difficulty;
-    diffPill.className = `q-pill ${this.difficulty.toLowerCase()}`;
+    diffPill.textContent = displayDiff;
+    diffPill.className = `q-pill ${(displayDiff || 'easy').toLowerCase()}`;
     const bookmarkPill = document.getElementById('q-bookmark-pill');
     const isBookmarked = !!this.bookmarked[this.current];
     bookmarkPill.textContent = isBookmarked ? '★ Bookmarked' : '☆ Bookmark';
@@ -2178,12 +2313,18 @@ const Quiz = {
       const readText = `Question ${this.current+1}. ${q.question}. Option A: ${q.options.A}. Option B: ${q.options.B}. Option C: ${q.options.C}. Option D: ${q.options.D}.`;
       Voice.speak(readText);
     }
-    if (prevAns === undefined && !this.reviewMode) this.startTimer();
-    else clearInterval(this.timerInterval);
+    if (this.overallMode) {
+      if (!this.overallTimerStarted) this.startOverallTimer(this.overallTotalSeconds || 1800);
+    } else if (prevAns === undefined && !this.reviewMode) {
+      this.startTimer();
+    } else {
+      clearInterval(this.timerInterval);
+    }
   },
   selectAnswer(key) {
     if (this.locked) return;
-    this.locked = true; clearInterval(this.timerInterval);
+    this.locked = true;
+    if (!this.overallMode) clearInterval(this.timerInterval);
     const q = this.questions[this.current]; this.answers[this.current] = key;
     document.querySelectorAll('.option-item').forEach(li => {
       li.classList.add('locked'); const k = li.dataset.key;
@@ -2214,24 +2355,30 @@ const Quiz = {
     const isLast = this.current === this.questions.length - 1;
     if (isLast) { this.finish(); } else { this.current++; this.renderQuestion(); }
   },
-  goBack() { if (this.current > 0) { this.current--; this.renderQuestion(); clearInterval(this.timerInterval); } },
+  goBack() { if (this.current > 0) { this.current--; this.renderQuestion(); if (!this.overallMode) clearInterval(this.timerInterval); } },
   finish() {
     clearInterval(this.timerInterval); Voice.stop();
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
     let correct = 0; const wrong = [];
-    this.questions.forEach((q, i) => { if (this.answers[i] === q.answer) { correct++; } else { wrong.push({ q, chosen: this.answers[i], index: i }); } });
+    const subjectBreakdown = {};
+    this.questions.forEach((q, i) => {
+      const subj = q.subject || this.subject;
+      if (!subjectBreakdown[subj]) subjectBreakdown[subj] = { total: 0, correct: 0 };
+      subjectBreakdown[subj].total++;
+      if (this.answers[i] === q.answer) { correct++; subjectBreakdown[subj].correct++; } else { wrong.push({ q, chosen: this.answers[i], index: i }); }
+    });
     const total = this.questions.length; const pct = Math.round((correct / total) * 100);
 
     // Save bookmarked questions for later review
     const bookmarkedQs = Object.keys(this.bookmarked).filter(i => this.bookmarked[i]).map(i => this.questions[i]);
     if (bookmarkedQs.length > 0 && !this.reviewMode) {
       const existing = Store.getBookmarks();
-      Store.setBookmarks(existing.concat(bookmarkedQs.map(q => ({ ...q, subject: this.subject, difficulty: this.difficulty }))));
+      Store.setBookmarks(existing.concat(bookmarkedQs.map(q => ({ ...q, subject: q.subject || this.subject, difficulty: q.difficulty || this.difficulty }))));
     }
 
     if (this.reviewMode) {
       // Don't double-count stats for a bookmark review session
-      App.renderResults(pct, correct, wrong, elapsed, 0);
+      App.renderResults(pct, correct, wrong, elapsed, 0, subjectBreakdown);
       UI.navigate('results');
       document.getElementById('res-xp').textContent = '+0 (review)';
       if (pct >= 70) Confetti.burst();
@@ -2239,17 +2386,19 @@ const Quiz = {
     }
 
     const diffBonus = { Easy: 1, Medium: 1.5, Hard: 2 };
-    const xpEarned = Math.round(correct * 10 * (diffBonus[this.difficulty] || 1));
+    const xpEarned = Math.round(correct * 10 * (diffBonus[this.difficulty] || 1.25));
     const stats = Store.getStats();
     stats.quizzes++; stats.totalQ += total; stats.correct += correct; stats.xp += xpEarned;
-    if (!stats.subjectMap[this.subject]) { stats.subjectMap[this.subject] = { total: 0, correct: 0 }; }
-    stats.subjectMap[this.subject].total += total; stats.subjectMap[this.subject].correct += correct;
+    Object.entries(subjectBreakdown).forEach(([subj, d]) => {
+      if (!stats.subjectMap[subj]) { stats.subjectMap[subj] = { total: 0, correct: 0 }; }
+      stats.subjectMap[subj].total += d.total; stats.subjectMap[subj].correct += d.correct;
+      if (!stats.studiedSubjects.includes(subj)) { stats.studiedSubjects.push(subj); }
+    });
     const today = new Date().toDateString(); const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (stats.lastDate === yesterday) stats.streak++; else if (stats.lastDate !== today) stats.streak = 1;
     stats.lastDate = today;
     stats.history.push({ subject: this.subject, difficulty: this.difficulty, score: pct, correct, total, xp: xpEarned, time: elapsed, date: new Date().toLocaleDateString() });
     if (stats.history.length > 50) stats.history = stats.history.slice(-50);
-    if (!stats.studiedSubjects.includes(this.subject)) { stats.studiedSubjects.push(this.subject); }
     Store.setStats(stats);
     const profile = Store.getProfile(); const lb = Store.getLeaderboard();
     const existingIdx = lb.findIndex(e => e.name === profile.name && e.class === profile.class);
@@ -2258,7 +2407,8 @@ const Quiz = {
     else { lb.push(entry); }
     Store.setLeaderboard(lb);
     App.checkAchievements(stats, pct, elapsed);
-    App.renderResults(pct, correct, wrong, elapsed, xpEarned);
+    if (this.isDiagnostic) { App.applyDiagnosticInsights(subjectBreakdown); }
+    App.renderResults(pct, correct, wrong, elapsed, xpEarned, this.isDiagnostic ? subjectBreakdown : null);
     UI.navigate('results');
     document.getElementById('btn-review-bookmarks').style.display = Store.getBookmarks().length > 0 ? 'inline-flex' : 'none';
     if (pct >= 70) Confetti.burst();
@@ -2317,9 +2467,73 @@ const Flashcards = {
   }
 };
 
+const Buddy = {
+  sending: false,
+  async sendMessage(text) {
+    if (!text || this.sending) return;
+    this.sending = true;
+    const sendBtn = document.getElementById('btn-chat-send');
+    if (sendBtn) sendBtn.disabled = true;
+    const history = Store.getChatHistory();
+    history.push({ role: 'user', content: text, ts: Date.now() });
+    Store.setChatHistory(history);
+    App.renderChatMessages();
+    this.showTyping(true);
+    try {
+      const profile = Store.getProfile();
+      const context = profile ? `${profile.class} ${profile.arm} student` : '';
+      const reply = await Groq.chatBuddy(history.slice(-16), context);
+      const h2 = Store.getChatHistory();
+      h2.push({ role: 'assistant', content: reply, ts: Date.now() });
+      Store.setChatHistory(h2);
+      App.renderChatMessages();
+      const stats = Store.getStats();
+      const achievements = stats.achievements || [];
+      if (!achievements.includes('first_chat')) { achievements.push('first_chat'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Say Hello!', 'success', 4000); }
+    } catch (err) {
+      UI.toast('Chat failed: ' + err.message, 'error');
+    } finally {
+      this.showTyping(false);
+      this.sending = false;
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  },
+  showTyping(on) { const el = document.getElementById('chat-typing'); if (el) el.style.display = on ? 'flex' : 'none'; },
+  async analyze() {
+    const history = Store.getChatHistory();
+    if (history.length < 2) { UI.toast('Chat a bit more with your study buddy before analyzing', 'info'); return; }
+    const btn = document.getElementById('btn-analyze-chat');
+    const orig = btn.textContent; btn.textContent = '⏳ Analyzing…'; btn.disabled = true;
+    try {
+      const result = await Groq.analyzeConversation(history);
+      const existing = Store.getInsights();
+      const merged = App.mergeInsights(existing, result);
+      merged.lastAnalyzed = new Date().toLocaleString();
+      Store.setInsights(merged);
+      App.renderInsights();
+      if (merged.strengths.length === 0 && merged.weaknesses.length === 0) {
+        UI.toast('Not enough specifics yet — tell your buddy more about which subjects/topics feel easy or hard', 'info', 4000);
+      } else {
+        UI.toast('Your strengths & weak points have been updated!', 'success');
+      }
+      const stats = Store.getStats();
+      const achievements = stats.achievements || [];
+      if (!achievements.includes('self_aware')) { achievements.push('self_aware'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Self Aware!', 'success', 4000); }
+    } catch (err) {
+      UI.toast('Analysis failed: ' + err.message, 'error');
+    } finally { btn.textContent = orig; btn.disabled = false; }
+  },
+  clear() {
+    if (!confirm('Clear your whole conversation with the AI Study Buddy? (Your saved strengths/weaknesses stay.)')) return;
+    Store.setChatHistory([]);
+    App.renderChatMessages();
+    UI.toast('Chat cleared', 'info');
+  }
+};
+
 const App = {
   selectedSubject: null, selectedDifficulty: 'Easy', selectedCount: 10, currentClass: 'JSS1',
-  _pendingNoteQuiz: null, _pendingFlashcard: null,
+  _pendingNoteQuiz: null, _pendingFlashcard: null, selectedDiagnosticSubjects: [],
   init() {
     Voice.init(); Confetti.init(); this.applySettings();
     const profile = Store.getProfile();
@@ -2370,7 +2584,7 @@ const App = {
     document.getElementById('font-size-select').addEventListener('change', (e) => { document.documentElement.style.setProperty('--fs-base', e.target.value); const settings = Store.getSettings(); settings.fontSize = e.target.value; Store.setSettings(settings); });
     document.getElementById('btn-reset').addEventListener('click', () => {
       if (confirm('⚠️ This will delete ALL your data. Are you sure?')) {
-        ['rh_profile','rh_stats','rh_leaderboard','rh_settings','rh_notes','rh_bookmarks'].forEach(k => Store.remove(k));
+        ['rh_profile','rh_stats','rh_leaderboard','rh_settings','rh_notes','rh_bookmarks','rh_chat_history','rh_insights'].forEach(k => Store.remove(k));
         location.reload();
       }
     });
@@ -2421,6 +2635,21 @@ const App = {
     document.getElementById('notes-list').addEventListener('click', (e) => this.handleNotesListClick(e));
     document.getElementById('btn-import-pdf').addEventListener('click', () => document.getElementById('note-pdf-input').click());
     document.getElementById('note-pdf-input').addEventListener('change', (e) => this.handlePdfImport(e));
+
+    // Chat page events
+    document.getElementById('btn-chat-send').addEventListener('click', () => this.handleChatSend());
+    document.getElementById('chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.handleChatSend(); });
+    document.getElementById('btn-analyze-chat').addEventListener('click', () => Buddy.analyze());
+    document.getElementById('btn-clear-chat').addEventListener('click', () => Buddy.clear());
+
+    // Diagnostic test events
+    document.querySelectorAll('#diagnostic-count-pills .pill-option').forEach(p => {
+      p.addEventListener('click', () => { document.querySelectorAll('#diagnostic-count-pills .pill-option').forEach(x => x.classList.remove('active')); p.classList.add('active'); });
+    });
+    document.querySelectorAll('#diagnostic-time-pills .pill-option').forEach(p => {
+      p.addEventListener('click', () => { document.querySelectorAll('#diagnostic-time-pills .pill-option').forEach(x => x.classList.remove('active')); p.classList.add('active'); });
+    });
+    document.getElementById('btn-start-diagnostic').addEventListener('click', () => this.startDiagnosticTest());
   },
   startApp() {
     document.getElementById('page-register').style.display = 'none';
@@ -2521,9 +2750,11 @@ const App = {
   renderSubjectCards(cls) {
     const group = cls.startsWith('JSS') ? 'JSS' : 'SS'; const subjects = SUBJECTS[group];
     const grid = document.getElementById('subjects-grid');
+    const insights = Store.getInsights();
+    const weakSubs = new Set((insights.weaknesses || []).map(w => w.subject));
     grid.innerHTML = subjects.map(s => `
       <div class="subject-card ${this.selectedSubject === s.name ? 'selected' : ''}" data-subject="${s.name}">
-        <span class="subject-emoji">${s.emoji}</span><div class="subject-name">${s.name}</div>
+        <span class="subject-emoji">${s.emoji}</span><div class="subject-name">${s.name}${weakSubs.has(s.name) ? ' 🎯' : ''}</div>
       </div>`).join('');
     grid.querySelectorAll('.subject-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -2533,7 +2764,7 @@ const App = {
         document.getElementById('quiz-config').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     });
-    const diffPills = document.querySelectorAll('[data-diff]'); const countPills = document.querySelectorAll('[data-count]');
+    const diffPills = document.querySelectorAll('#quiz-config [data-diff]'); const countPills = document.querySelectorAll('#quiz-config [data-count]');
     diffPills.forEach(p => { p.addEventListener('click', () => { diffPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedDifficulty = p.dataset.diff; }); });
     countPills.forEach(p => { p.addEventListener('click', () => { countPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedCount = parseInt(p.dataset.count); }); });
     document.getElementById('btn-start-quiz').onclick = () => {
@@ -2571,7 +2802,7 @@ const App = {
       console.error('Groq error:', err);
     }
   },
-  renderResults(pct, correct, wrong, elapsed, xpEarned) {
+  renderResults(pct, correct, wrong, elapsed, xpEarned, subjectBreakdown) {
     const total = Quiz.questions.length;
     document.getElementById('result-score').textContent = pct + '%';
     document.getElementById('res-correct').textContent = correct;
@@ -2598,6 +2829,15 @@ const App = {
       suggestSection.style.display = 'block';
       document.getElementById('suggest-list').innerHTML = weakTopics.map(t => `<span class="suggest-tag">${t}</span>`).join('');
     } else { suggestSection.style.display = 'none'; }
+    const diagCard = document.getElementById('diagnostic-breakdown-card');
+    if (subjectBreakdown && Object.keys(subjectBreakdown).length > 0) {
+      diagCard.style.display = 'block';
+      const entries = Object.entries(subjectBreakdown).sort((a,b) => (b[1].correct/b[1].total) - (a[1].correct/a[1].total));
+      document.getElementById('diagnostic-breakdown-chart').innerHTML = entries.map(([subj, d]) => {
+        const p = Math.round(d.correct/d.total*100);
+        return `<div class="bar-item"><div class="bar-name">${subj.split(' ')[0]}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div><div class="bar-pct">${p}%</div></div>`;
+      }).join('');
+    } else { diagCard.style.display = 'none'; }
     document.getElementById('btn-review-bookmarks').style.display = Store.getBookmarks().length > 0 ? 'inline-flex' : 'none';
   },
   renderAnalytics() {
@@ -2660,6 +2900,7 @@ const App = {
     if (Quiz.difficulty === 'Hard') unlock('hard_quiz');
     if ((stats.studiedSubjects || []).length >= 5) unlock('multi_subject');
     if (elapsed < 180 && Quiz.questions.length >= 10) unlock('speed_demon');
+    if (Quiz.isDiagnostic) unlock('diagnostic_done');
     stats.achievements = achievements; Store.setStats(stats);
     App.updateSidebarStats();
   },
@@ -2883,6 +3124,135 @@ const App = {
     this._pendingNoteQuiz = { text: combined, subject: 'All My Notes' };
     UI.openModal('note-quiz-modal');
   },
+
+  /* ===================== AI STUDY BUDDY CHAT ===================== */
+  renderChatPage() {
+    this.renderChatMessages();
+    this.renderInsights();
+  },
+  renderChatMessages() {
+    Buddy.renderMessages ? null : null; // no-op guard
+    const history = Store.getChatHistory();
+    const wrap = document.getElementById('chat-messages');
+    if (!wrap) return;
+    if (history.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🗣️</span>Say hi to your AI study buddy — tell it what subjects you're working on, what feels easy, and what feels hard.</div>`;
+      return;
+    }
+    wrap.innerHTML = history.map(m => `<div class="chat-bubble ${m.role}"><div class="chat-bubble-inner">${UI.escapeHtml(m.content)}</div></div>`).join('');
+    wrap.scrollTop = wrap.scrollHeight;
+  },
+  handleChatSend() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    Buddy.sendMessage(text);
+  },
+  renderInsights() {
+    const panel = document.getElementById('insights-panel');
+    if (!panel) return;
+    const insights = Store.getInsights();
+    const strengths = insights.strengths || []; const weaknesses = insights.weaknesses || [];
+    const renderItems = (items, cls) => items.length
+      ? items.map(i => `<div class="insight-item ${cls}"><strong>${UI.escapeHtml(i.subject)}</strong><span>${UI.escapeHtml(i.note || '')}</span></div>`).join('')
+      : `<div class="insight-empty">Nothing recorded yet</div>`;
+    panel.innerHTML = `
+      <h3>💪 Your Strengths</h3>
+      <div class="insight-list">${renderItems(strengths, 'strength')}</div>
+      <h3 style="margin-top:20px;">🎯 Areas to Work On</h3>
+      <div class="insight-list">${renderItems(weaknesses, 'weakness')}</div>
+      ${insights.lastAnalyzed ? `<div class="insight-updated">Last updated: ${insights.lastAnalyzed}</div>` : ''}
+      ${weaknesses.length > 0 ? `<button class="btn-primary" style="margin-top:16px;" id="btn-personalized-quiz">🎯 Quiz Me On My Weak Points</button>` : ''}
+    `;
+    const pBtn = document.getElementById('btn-personalized-quiz');
+    if (pBtn) pBtn.addEventListener('click', () => this.startPersonalizedQuiz());
+  },
+  mergeInsights(existing, incoming) {
+    const mergeList = (oldList, newList) => {
+      const map = {};
+      (oldList || []).forEach(i => { map[i.subject] = i; });
+      (newList || []).forEach(i => { map[i.subject] = i; }); // fresher note wins
+      return Object.values(map).slice(-10);
+    };
+    return {
+      strengths: mergeList(existing.strengths, incoming.strengths),
+      weaknesses: mergeList(existing.weaknesses, incoming.weaknesses)
+    };
+  },
+  async startPersonalizedQuiz() {
+    const insights = Store.getInsights();
+    Quiz.reset(); Quiz.subject = 'Personalized Practice'; Quiz.difficulty = 'Medium'; Quiz.isPersonalized = true;
+    UI.navigate('quiz'); document.getElementById('quiz-loading').style.display = 'flex'; document.getElementById('quiz-question-wrap').style.display = 'none';
+    document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Building a quiz around your weak points…</div>`;
+    try {
+      const qs = await Groq.generatePersonalizedQuestions('Medium', 12, this.currentClass, insights);
+      Quiz.questions = qs; Quiz.startTime = Date.now();
+      document.getElementById('quiz-loading').style.display = 'none';
+      document.getElementById('quiz-question-wrap').style.display = 'block';
+      Quiz.renderQuestion();
+    } catch (err) {
+      document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate personalized quiz</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('chat')">← Go Back</button></div>`;
+    }
+  },
+
+  /* ===================== DIAGNOSTIC TEST ===================== */
+  renderDiagnosticPage() {
+    const profile = Store.getProfile(); const cls = profile ? profile.class : this.currentClass;
+    const group = cls.startsWith('JSS') ? 'JSS' : 'SS';
+    const subjects = SUBJECTS[group];
+    const grid = document.getElementById('diagnostic-subjects-grid');
+    if (this.selectedDiagnosticSubjects.length === 0) {
+      this.selectedDiagnosticSubjects = subjects.slice(0, 6).map(s => s.name);
+    }
+    grid.innerHTML = subjects.map(s => `
+      <div class="subject-card ${this.selectedDiagnosticSubjects.includes(s.name) ? 'selected' : ''}" data-subject="${s.name}">
+        <span class="subject-emoji">${s.emoji}</span><div class="subject-name">${s.name}</div>
+      </div>`).join('');
+    grid.querySelectorAll('.subject-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const name = card.dataset.subject;
+        if (this.selectedDiagnosticSubjects.includes(name)) {
+          this.selectedDiagnosticSubjects = this.selectedDiagnosticSubjects.filter(n => n !== name);
+          card.classList.remove('selected');
+        } else {
+          this.selectedDiagnosticSubjects.push(name);
+          card.classList.add('selected');
+        }
+      });
+    });
+  },
+  async startDiagnosticTest() {
+    if (this.selectedDiagnosticSubjects.length === 0) { UI.toast('Select at least one subject', 'error'); return; }
+    const count = parseInt(document.querySelector('#diagnostic-count-pills .pill-option.active').dataset.count);
+    const mins = parseInt(document.querySelector('#diagnostic-time-pills .pill-option.active').dataset.mins);
+    Quiz.reset();
+    Quiz.subject = 'Diagnostic Test'; Quiz.difficulty = 'Mixed'; Quiz.overallMode = true;
+    Quiz.overallTotalSeconds = mins * 60; Quiz.isDiagnostic = true;
+    UI.navigate('quiz'); document.getElementById('quiz-loading').style.display = 'flex'; document.getElementById('quiz-question-wrap').style.display = 'none';
+    document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Building your diagnostic test across ${this.selectedDiagnosticSubjects.length} subjects…</div>`;
+    try {
+      const qs = await Groq.generateDiagnosticTest(this.selectedDiagnosticSubjects, this.currentClass, count);
+      Quiz.questions = qs; Quiz.startTime = Date.now();
+      document.getElementById('quiz-loading').style.display = 'none';
+      document.getElementById('quiz-question-wrap').style.display = 'block';
+      Quiz.renderQuestion();
+    } catch (err) {
+      document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate diagnostic test</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('diagnostic')">← Go Back</button></div>`;
+    }
+  },
+  applyDiagnosticInsights(subjectBreakdown) {
+    const existing = Store.getInsights();
+    const newStrengths = []; const newWeaknesses = [];
+    Object.entries(subjectBreakdown).forEach(([subj, d]) => {
+      const p = d.total > 0 ? Math.round(d.correct/d.total*100) : 0;
+      if (p >= 75) newStrengths.push({ subject: subj, note: `Scored ${p}% on the diagnostic test` });
+      else if (p < 50) newWeaknesses.push({ subject: subj, note: `Scored ${p}% on the diagnostic test — needs more practice` });
+    });
+    const merged = this.mergeInsights(existing, { strengths: newStrengths, weaknesses: newWeaknesses });
+    merged.lastAnalyzed = new Date().toLocaleString();
+    Store.setInsights(merged);
+  },
 };
 
 /* ===================== DATA EXPORT/IMPORT ===================== */
@@ -2894,6 +3264,8 @@ const DataManager = {
     const notes = Store.getNotes();
     const leaderboard = Store.getLeaderboard();
     const bookmarks = Store.getBookmarks();
+    const chatHistory = Store.getChatHistory();
+    const insights = Store.getInsights();
 
     const exportData = {
       version: 1,
@@ -2903,7 +3275,9 @@ const DataManager = {
       settings,
       notes,
       leaderboard,
-      bookmarks
+      bookmarks,
+      chatHistory,
+      insights
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -2957,6 +3331,8 @@ const DataManager = {
         if (importedData.notes) Store.setNotes(importedData.notes);
         if (importedData.leaderboard) Store.setLeaderboard(importedData.leaderboard);
         if (importedData.bookmarks) Store.setBookmarks(importedData.bookmarks);
+        if (importedData.chatHistory) Store.setChatHistory(importedData.chatHistory);
+        if (importedData.insights) Store.setInsights(importedData.insights);
 
         UI.toast('✅ Data imported successfully! Reloading…', 'success');
         setTimeout(() => { window.location.reload(); }, 1500);

@@ -274,7 +274,6 @@ body {
   font-size: 17px; transition: all 0.2s;
 }
 .btn-icon:hover { border-color: var(--blue-bright); color: #fff; box-shadow: 0 0 20px rgba(37,99,235,0.3); background: rgba(37,99,235,0.15); }
-.btn-icon.on { border-color: var(--cyan-blue); color: var(--cyan-blue); background: rgba(14,165,233,0.15); box-shadow: 0 0 20px rgba(14,165,233,0.3); }
 
 /* ---- PAGE CONTENT ---- */
 .page-content { flex: 1; padding: 28px 28px 40px; max-width: 1100px; }
@@ -1239,97 +1238,6 @@ body {
   background-color: transparent;
   color: black;
 }
-
-/* =========================================================
-   AI VOICE CHAT
-   ========================================================= */
-.voicechat-wrap {
-  display: flex; flex-direction: column;
-  height: calc(100vh - var(--topbar-h) - 120px);
-  min-height: 420px;
-}
-.voicechat-status-bar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px;
-  background: var(--grad-card);
-  border: 1.5px solid rgba(37,99,235,0.25);
-  border-radius: var(--radius-md);
-  margin-bottom: 14px;
-  font-size: 13px; font-weight: 600;
-}
-.vc-status-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--text-muted); flex-shrink: 0;
-  transition: all 0.2s;
-}
-.vc-status-dot.idle { background: var(--text-muted); }
-.vc-status-dot.listening { background: var(--blue-light); box-shadow: 0 0 12px rgba(59,130,246,0.7); animation: speakPulse 1s infinite; }
-.vc-status-dot.thinking { background: var(--blue); box-shadow: 0 0 12px rgba(37,99,235,0.7); animation: speakPulse 0.7s infinite; }
-.vc-status-dot.speaking { background: var(--cyan-blue); box-shadow: 0 0 12px rgba(14,165,233,0.7); animation: speakPulse 0.6s infinite; }
-.vc-status-text { flex: 1; }
-.vc-clear-btn { padding: 6px 14px; font-size: 12px; }
-
-.voicechat-log {
-  flex: 1; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 8px 4px 16px;
-}
-.vc-msg {
-  max-width: 78%;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  font-size: 14px; line-height: 1.6;
-  animation: fadeSlideIn 0.25s ease;
-}
-.vc-msg.user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, rgba(37,99,235,0.35), rgba(30,58,138,0.3));
-  border: 1.5px solid rgba(37,99,235,0.4);
-  border-bottom-right-radius: 4px;
-}
-.vc-msg.ai {
-  align-self: flex-start;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
-  border-bottom-left-radius: 4px;
-}
-.vc-msg small { display: block; margin-bottom: 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
-
-.voicechat-controls {
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
-  padding-top: 14px; border-top: 1.5px solid rgba(37,99,235,0.15);
-}
-.vc-mic-btn {
-  width: 84px; height: 84px; border-radius: 50%;
-  background: var(--grad-primary);
-  border: 3px solid rgba(255,255,255,0.2);
-  color: #fff; font-size: 32px;
-  cursor: pointer; transition: all 0.25s;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-glow);
-  flex-shrink: 0;
-}
-.vc-mic-btn:hover { transform: scale(1.05); }
-.vc-mic-btn.active {
-  background: linear-gradient(135deg, var(--cyan-blue), var(--blue-light));
-  animation: speakPulse 1s infinite;
-  box-shadow: 0 0 0 0 rgba(14,165,233,0.5);
-}
-.vc-mic-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.vc-mic-hint { font-size: 12px; color: var(--text-secondary); text-align: center; }
-.vc-text-row { display: flex; gap: 8px; width: 100%; max-width: 500px; }
-.vc-text-row input { flex: 1; }
-.vc-toggle-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); }
-.vc-fab {
-  position: fixed; bottom: 90px; right: 24px; z-index: 95;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--grad-primary); color: #fff; border: 3px solid rgba(255,255,255,0.2);
-  font-size: 24px; cursor: pointer; box-shadow: var(--shadow-glow);
-  display: none; align-items: center; justify-content: center;
-}
-@media (max-width: 768px) {
-  .voicechat-wrap { height: calc(100vh - var(--topbar-h) - 190px); }
-}
 </style>
 </head>
 <body>
@@ -1473,9 +1381,6 @@ body {
       <div class="nav-item" data-page="notes">
         <span class="nav-icon">📝</span> Notes
       </div>
-      <div class="nav-item" data-page="voicechat">
-        <span class="nav-icon">🎙️</span> Talk to AI
-      </div>
       <div class="nav-section-label">Progress</div>
       <div class="nav-item" data-page="analytics">
         <span class="nav-icon">📊</span> Analytics
@@ -1507,7 +1412,7 @@ body {
       <button class="topbar-hamburger" id="hamburger">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
       <div class="topbar-actions">
-        <button class="btn-icon" id="btn-voice-toggle" title="Toggle auto voice reading">🔇</button>
+        <button class="btn-icon" id="btn-voice-toggle" title="Toggle voice">🔊</button>
         <button class="btn-icon" id="btn-theme" title="Toggle theme">🌙</button>
       </div>
     </header>
@@ -1675,39 +1580,6 @@ body {
         </div>
       </section>
 
-      <!-- ========== AI VOICE CHAT ========== -->
-      <section class="page" id="page-voicechat">
-        <div class="page-header">
-          <h2>🎙️ Talk to AI</h2>
-          <p>Have a real spoken conversation — ask about any topic, and the AI will answer out loud</p>
-        </div>
-        <div class="voicechat-wrap">
-          <div class="voicechat-status-bar">
-            <div class="vc-status-dot idle" id="vc-status-dot"></div>
-            <div class="vc-status-text" id="vc-status-text">Tap the mic to start talking</div>
-            <button class="btn-secondary vc-clear-btn" id="btn-vc-clear">🗑️ Clear Chat</button>
-          </div>
-          <div class="voicechat-log" id="voicechat-log">
-            <div class="empty-state">
-              <span class="empty-icon">🎙️</span>
-              Tap the microphone and start speaking — I'll answer out loud.
-            </div>
-          </div>
-          <div class="voicechat-controls">
-            <div class="vc-toggle-row">
-              <div class="toggle" id="toggle-vc-autolisten"></div>
-              <span>Keep listening after each reply (hands-free mode)</span>
-            </div>
-            <button class="vc-mic-btn" id="btn-vc-mic" title="Tap to speak">🎤</button>
-            <div class="vc-mic-hint" id="vc-mic-hint">Tap to speak</div>
-            <div class="vc-text-row">
-              <input class="form-input" id="vc-text-input" type="text" placeholder="…or type your message here" />
-              <button class="btn-primary" style="width:auto;" id="btn-vc-send">Send</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ========== QUIZ ENGINE ========== -->
       <section class="page" id="page-quiz">
         <div class="quiz-header">
@@ -1866,7 +1738,7 @@ body {
             <div class="toggle on" id="toggle-sound"></div>
           </div>
           <div class="settings-row">
-            <div class="settings-label">Voice Reading<small>Auto-read quiz questions aloud</small></div>
+            <div class="settings-label">Voice Reading<small>Auto-read questions aloud</small></div>
             <div class="toggle" id="toggle-voice"></div>
           </div>
         </div>
@@ -1907,9 +1779,6 @@ body {
       </button>
       <button class="mobile-nav-item" data-page="notes">
         <span class="mn-icon">📝</span>Notes
-      </button>
-      <button class="mobile-nav-item" data-page="voicechat">
-        <span class="mn-icon">🎙️</span>AI Chat
       </button>
       <button class="mobile-nav-item" data-page="analytics">
         <span class="mn-icon">📊</span>Stats
@@ -2011,7 +1880,6 @@ const ACHIEVEMENTS_CONFIG = [
   { id: 'flashcard_maker', name: 'Card Creator',   icon: '🗃️', desc: 'Generate flashcards for 3 notes' },
   { id: 'flashcard_master', name: 'Flashcard Master', icon: '🏅', desc: 'Mark 20 flashcards as known' },
   { id: 'pdf_importer',  name: 'Digitizer',        icon: '📄', desc: 'Import a note from a PDF' },
-  { id: 'voice_talker',  name: 'Conversationalist', icon: '🎙️', desc: 'Have a spoken conversation with the AI' },
 ];
 
 const Store = {
@@ -2038,119 +1906,39 @@ const Store = {
   setBookmarks: (b) => Store.set('rh_bookmarks', b),
 };
 
-/* =================================================================
-   VOICE — text-to-speech + speech-to-text, hardened against the
-   "keeps turning on/off" and Chrome auto-stop bugs.
-   ================================================================= */
 const Voice = {
   synth: window.speechSynthesis,
   recognition: null,
-  recognitionSupported: false,
-  enabled: false,      // auto-read-quiz-questions setting
+  enabled: false,
   speaking: false,
-  listening: false,
-  _resumeTimer: null,
-  _stateListeners: [],
-  _voices: [],
-
   init() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    this.recognitionSupported = !!SpeechRec;
     if (SpeechRec) {
       this.recognition = new SpeechRec();
       this.recognition.lang = 'en-GB';
       this.recognition.interimResults = false;
-      this.recognition.maxAlternatives = 1;
-      this.recognition.continuous = false;
-    }
-    // A refresh can leave the browser's speech queue in a stuck state —
-    // always start from a clean slate so nothing speaks unexpectedly on load.
-    if (this.synth) {
-      this.synth.cancel();
-      // Some browsers load voices asynchronously; pre-warm the list.
-      const loadVoices = () => { this._voices = this.synth.getVoices(); };
-      loadVoices();
-      if (this.synth.onvoiceschanged !== undefined) { this.synth.onvoiceschanged = loadVoices; }
     }
     const settings = Store.getSettings();
-    this.enabled = !!settings.voice;
+    this.enabled = settings.voice;
   },
-
-  // Multiple screens (voice chat, notes discuss, voice quiz) can all care
-  // about mic/speaker state at once, so this is a list, not a single slot.
-  onStateChange(cb) { this._stateListeners.push(cb); },
-  _notify(val, kind) { this._stateListeners.forEach(cb => { try { cb(val, kind); } catch {} }); },
-  _setSpeaking(val) {
-    if (this.speaking === val) return;
-    this.speaking = val;
-    this._notify(val, 'speaking');
-  },
-  _setListening(val) {
-    if (this.listening === val) return;
-    this.listening = val;
-    this._notify(val, 'listening');
-  },
-
-  pickVoice() {
-    const voices = this._voices.length ? this._voices : (this.synth ? this.synth.getVoices() : []);
-    return voices.find(v => v.lang && v.lang.startsWith('en')) || voices[0] || null;
-  },
-
   speak(text, onEnd) {
-    if (!this.synth || !text) { if (onEnd) onEnd(); return; }
-    // Cancel any pending/active speech first so requests never overlap
-    // or silently queue up (this was the main cause of voice "flip-flopping").
+    if (!this.synth || !text) return;
     this.synth.cancel();
-    clearInterval(this._resumeTimer);
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 0.95; utter.pitch = 1; utter.lang = 'en-GB';
-    const v = this.pickVoice(); if (v) utter.voice = v;
-    utter.onstart = () => {
-      this._setSpeaking(true);
-      // Chrome has a long-standing bug where speechSynthesis silently
-      // halts after ~15s of continuous speech unless nudged.
-      clearInterval(this._resumeTimer);
-      this._resumeTimer = setInterval(() => {
-        if (this.synth.speaking && !this.synth.paused) { this.synth.pause(); this.synth.resume(); }
-      }, 12000);
-    };
-    const finish = () => {
-      clearInterval(this._resumeTimer);
-      this._setSpeaking(false);
-      if (onEnd) onEnd();
-    };
-    utter.onend = finish;
-    utter.onerror = finish;
-    // A tiny delay avoids a known race where cancel() + speak() in the
-    // same tick causes the new utterance to be silently dropped.
-    setTimeout(() => { try { this.synth.speak(utter); } catch { finish(); } }, 30);
+    utter.onstart = () => { this.speaking = true; };
+    utter.onend   = () => { this.speaking = false; if (onEnd) onEnd(); };
+    this.synth.speak(utter);
   },
-
-  stop() {
-    clearInterval(this._resumeTimer);
-    if (this.synth) { this.synth.cancel(); }
-    this._setSpeaking(false);
-  },
-
+  stop() { if (this.synth) { this.synth.cancel(); this.speaking = false; } },
   listenOnce(onResult, onError) {
-    if (!this.recognition) { if (onError) onError('Speech recognition is not supported in this browser. Try Chrome or Edge.'); return; }
-    if (this.listening) { try { this.recognition.stop(); } catch {} return; }
-    this._setListening(true);
+    if (!this.recognition) { if (onError) onError('Not supported'); return; }
     this.recognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
       if (onResult) onResult(transcript);
     };
-    this.recognition.onerror = (e) => {
-      this._setListening(false);
-      if (onError) onError(e.error);
-    };
-    this.recognition.onend = () => { this._setListening(false); };
-    try { this.recognition.start(); } catch (err) { this._setListening(false); if (onError) onError(err.message); }
-  },
-
-  stopListening() {
-    if (this.recognition && this.listening) { try { this.recognition.stop(); } catch {} }
-    this._setListening(false);
+    this.recognition.onerror = (e) => { if (onError) onError(e.error); };
+    this.recognition.start();
   }
 };
 
@@ -2220,13 +2008,6 @@ const Groq = {
   async simplifyExplanation(text, subjectLabel) {
     const prompt = `Explain the following${subjectLabel ? ` ${subjectLabel}` : ''} content in the simplest possible terms, as if to a much younger student. Use short sentences and a relatable everyday example if helpful. Keep it under 120 words.\n\n--- CONTENT ---\n${text.slice(0, 4000)}\n\nReturn ONLY the simplified explanation text, no preamble.`.trim();
     const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 400 });
-    return raw.trim();
-  },
-  async voiceChatReply(history, subjectHint) {
-    // history: array of { role: 'user'|'assistant', content }
-    const transcript = history.map(m => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`).join('\n');
-    const prompt = `You are a friendly, patient AI voice tutor talking out loud with a Nigerian secondary school student${subjectHint ? ` about ${subjectHint}` : ''}. This is a live spoken conversation, so: keep replies short (2-4 sentences, under ~70 words) unless the student explicitly asks for more detail; speak naturally like a real teacher would, not like a document; never use markdown, bullet points, headers, or asterisks since this will be read aloud; ask a short follow-up question when it helps the student learn.\n\n--- CONVERSATION SO FAR ---\n${transcript}\n\nReply as the Tutor to the student's last message. Return ONLY the spoken reply text, nothing else.`.trim();
-    const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 400 });
     return raw.trim();
   }
 };
@@ -2304,15 +2085,12 @@ const UI = {
     setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(20px)'; t.style.transition='all 0.3s'; setTimeout(() => t.remove(), 350); }, duration);
   },
   navigate(pageId) {
-    // Leaving a page always stops any in-flight speech/listening so audio
-    // never keeps running (or randomly cuts in) on the wrong screen.
-    if (pageId !== 'voicechat') { Voice.stop(); Voice.stopListening(); }
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const target = document.getElementById(`page-${pageId}`);
     if (target) target.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
     document.querySelectorAll('.mobile-nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
-    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', voicechat:'AI Voice Chat', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[pageId] || 'Revision Hub AI';
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('show');
@@ -2334,7 +2112,7 @@ const Quiz = {
   questions: [], current: 0, answers: {}, startTime: 0,
   timerInterval: null, timeLeft: 60, subject: '', difficulty: '', totalQuestions: 10, locked: false,
   fromNotes: false, bookmarked: {}, reviewMode: false,
-  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; clearInterval(this.timerInterval); Voice.stop(); },
+  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; clearInterval(this.timerInterval); },
   startTimer() {
     this.timeLeft = 60; this.updateTimerDisplay();
     clearInterval(this.timerInterval);
@@ -2354,7 +2132,6 @@ const Quiz = {
   renderQuestion() {
     const q = this.questions[this.current]; if (!q) return;
     this.locked = false;
-    Voice.stop();
     document.getElementById('q-subject-pill').textContent = this.subject;
     const diffPill = document.getElementById('q-diff-pill');
     diffPill.textContent = this.difficulty;
@@ -2396,13 +2173,10 @@ const Quiz = {
     const isLast = this.current === this.questions.length - 1;
     const nextBtn = document.getElementById('btn-next');
     nextBtn.textContent = isLast ? 'Finish Quiz ✓' : 'Next →';
-    const readBtn = document.getElementById('btn-read-q');
-    if (readBtn) { readBtn.classList.remove('speaking'); readBtn.textContent = '🔊 Read'; }
     const settings = Store.getSettings();
-    if (settings.voice && prevAns === undefined) {
+    if (settings.voice) {
       const readText = `Question ${this.current+1}. ${q.question}. Option A: ${q.options.A}. Option B: ${q.options.B}. Option C: ${q.options.C}. Option D: ${q.options.D}.`;
-      Voice.speak(readText, () => { if (readBtn) { readBtn.classList.remove('speaking'); readBtn.textContent = '🔊 Read'; } });
-      if (readBtn) { readBtn.classList.add('speaking'); readBtn.textContent = '⏸ Stop'; }
+      Voice.speak(readText);
     }
     if (prevAns === undefined && !this.reviewMode) this.startTimer();
     else clearInterval(this.timerInterval);
@@ -2422,9 +2196,7 @@ const Quiz = {
     if (settings.sound) this.playSound(key === q.answer);
     if (settings.voice) {
       const feedback = key === q.answer ? `Correct! ${q.explanation}` : `Wrong! The correct answer is ${q.answer}. ${q.explanation}`;
-      const readBtn = document.getElementById('btn-read-q');
-      Voice.speak(feedback, () => { if (readBtn) { readBtn.classList.remove('speaking'); readBtn.textContent = '🔊 Read'; } });
-      if (readBtn) { readBtn.classList.add('speaking'); readBtn.textContent = '⏸ Stop'; }
+      Voice.speak(feedback);
     }
   },
   playSound(correct) {
@@ -2545,121 +2317,11 @@ const Flashcards = {
   }
 };
 
-/* =================================================================
-   VOICE CHAT — a real back-and-forth spoken conversation with the AI.
-   Tap the mic -> speak -> AI replies in text AND out loud -> (optional)
-   mic re-opens automatically for hands-free conversation.
-   ================================================================= */
-const VoiceChat = {
-  history: [],
-  autoListen: false,
-  busy: false,
-  init() {
-    Voice.onStateChange((val, kind) => this.syncStatus());
-    const micBtn = document.getElementById('btn-vc-mic');
-    micBtn.addEventListener('click', () => this.toggleMic());
-    document.getElementById('btn-vc-send').addEventListener('click', () => this.sendTyped());
-    document.getElementById('vc-text-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.sendTyped(); });
-    document.getElementById('btn-vc-clear').addEventListener('click', () => this.clear());
-    const autoToggle = document.getElementById('toggle-vc-autolisten');
-    autoToggle.addEventListener('click', () => {
-      this.autoListen = !this.autoListen;
-      autoToggle.classList.toggle('on', this.autoListen);
-    });
-    this.syncStatus();
-  },
-  toggleMic() {
-    if (!Voice.recognitionSupported) {
-      UI.toast('Speech recognition is not supported in this browser. Try Chrome or Edge, or type your message instead.', 'error', 4000);
-      return;
-    }
-    if (Voice.listening) { Voice.stopListening(); return; }
-    if (Voice.speaking) { Voice.stop(); } // interrupt the AI if it's mid-sentence
-    Voice.listenOnce(
-      (transcript) => { if (transcript && transcript.trim()) this.send(transcript.trim()); },
-      (err) => { if (err && err !== 'no-speech' && err !== 'aborted') UI.toast('Could not hear you: ' + err, 'error'); }
-    );
-  },
-  sendTyped() {
-    const input = document.getElementById('vc-text-input');
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    this.send(text);
-  },
-  async send(text) {
-    if (this.busy) return;
-    this.busy = true;
-    this.addMessage('user', text);
-    this.setThinking(true);
-    try {
-      const profile = Store.getProfile();
-      const reply = await Groq.voiceChatReply(this.history, profile ? `helping a ${profile.class} student` : '');
-      this.addMessage('ai', reply);
-      this.setThinking(false);
-      Voice.speak(reply, () => {
-        this.busy = false;
-        if (this.autoListen) { this.toggleMic(); }
-      });
-      const stats = Store.getStats();
-      const achievements = stats.achievements || [];
-      if (!achievements.includes('voice_talker')) { achievements.push('voice_talker'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Conversationalist!', 'success', 4000); }
-    } catch (err) {
-      this.setThinking(false);
-      this.busy = false;
-      UI.toast('AI could not respond: ' + err.message, 'error');
-    }
-  },
-  addMessage(role, content) {
-    this.history.push({ role: role === 'user' ? 'user' : 'assistant', content });
-    if (this.history.length > 20) this.history = this.history.slice(-20);
-    const log = document.getElementById('voicechat-log');
-    const empty = log.querySelector('.empty-state'); if (empty) empty.remove();
-    const div = document.createElement('div');
-    div.className = `vc-msg ${role === 'user' ? 'user' : 'ai'}`;
-    div.innerHTML = `<small>${role === 'user' ? 'You' : 'AI Tutor'}</small>${UI.escapeHtml(content)}`;
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
-  },
-  setThinking(isThinking) {
-    this._thinking = isThinking;
-    this.syncStatus();
-  },
-  syncStatus() {
-    const dot = document.getElementById('vc-status-dot');
-    const text = document.getElementById('vc-status-text');
-    const micBtn = document.getElementById('btn-vc-mic');
-    const hint = document.getElementById('vc-mic-hint');
-    if (!dot || !text || !micBtn) return;
-    micBtn.classList.remove('active');
-    if (this._thinking) {
-      dot.className = 'vc-status-dot thinking'; text.textContent = 'Thinking…';
-      micBtn.textContent = '🤔'; hint.textContent = 'AI is thinking…';
-    } else if (Voice.speaking) {
-      dot.className = 'vc-status-dot speaking'; text.textContent = 'Speaking…';
-      micBtn.textContent = '🔊'; hint.textContent = 'Tap the mic to interrupt';
-    } else if (Voice.listening) {
-      dot.className = 'vc-status-dot listening'; text.textContent = 'Listening…';
-      micBtn.classList.add('active'); micBtn.textContent = '🎤'; hint.textContent = 'Listening — speak now';
-    } else {
-      dot.className = 'vc-status-dot idle'; text.textContent = 'Tap the mic to start talking';
-      micBtn.textContent = '🎤'; hint.textContent = 'Tap to speak';
-    }
-  },
-  clear() {
-    Voice.stop(); Voice.stopListening();
-    this.history = []; this.busy = false; this._thinking = false;
-    const log = document.getElementById('voicechat-log');
-    log.innerHTML = `<div class="empty-state"><span class="empty-icon">🎙️</span>Tap the microphone and start speaking — I'll answer out loud.</div>`;
-    this.syncStatus();
-  }
-};
-
 const App = {
   selectedSubject: null, selectedDifficulty: 'Easy', selectedCount: 10, currentClass: 'JSS1',
   _pendingNoteQuiz: null, _pendingFlashcard: null,
   init() {
-    Voice.init(); Confetti.init(); VoiceChat.init(); this.applySettings();
+    Voice.init(); Confetti.init(); this.applySettings();
     const profile = Store.getProfile();
     if (!profile) { document.getElementById('page-register').style.display = 'flex'; }
     else { this.startApp(); }
@@ -2675,7 +2337,12 @@ const App = {
     document.querySelectorAll('.nav-item[data-page]').forEach(el => { el.addEventListener('click', () => UI.navigate(el.dataset.page)); });
     document.querySelectorAll('.mobile-nav-item[data-page]').forEach(el => { el.addEventListener('click', () => UI.navigate(el.dataset.page)); });
     document.getElementById('btn-theme').addEventListener('click', () => this.toggleTheme());
-    document.getElementById('btn-voice-toggle').addEventListener('click', () => this.setAutoVoice(!Store.getSettings().voice));
+    document.getElementById('btn-voice-toggle').addEventListener('click', () => {
+      const settings = Store.getSettings(); settings.voice = !settings.voice; Store.setSettings(settings);
+      Voice.enabled = settings.voice;
+      UI.toast(settings.voice ? 'Voice reading ON' : 'Voice reading OFF', 'info');
+      this.syncSettingsUI();
+    });
     document.getElementById('btn-next').addEventListener('click', () => {
       if (Quiz.answers[Quiz.current] !== undefined || Quiz.locked) { Quiz.advance(); } else { UI.toast('Please select an answer first', 'error'); }
     });
@@ -2699,11 +2366,10 @@ const App = {
       document.getElementById('btn-theme').textContent = settings.theme === 'dark' ? '🌙' : '☀️';
     });
     document.getElementById('toggle-sound').addEventListener('click', (e) => { e.currentTarget.classList.toggle('on'); const settings = Store.getSettings(); settings.sound = e.currentTarget.classList.contains('on'); Store.setSettings(settings); });
-    document.getElementById('toggle-voice').addEventListener('click', (e) => { this.setAutoVoice(!Store.getSettings().voice); });
+    document.getElementById('toggle-voice').addEventListener('click', (e) => { e.currentTarget.classList.toggle('on'); const settings = Store.getSettings(); settings.voice = e.currentTarget.classList.contains('on'); Store.setSettings(settings); Voice.enabled = settings.voice; });
     document.getElementById('font-size-select').addEventListener('change', (e) => { document.documentElement.style.setProperty('--fs-base', e.target.value); const settings = Store.getSettings(); settings.fontSize = e.target.value; Store.setSettings(settings); });
     document.getElementById('btn-reset').addEventListener('click', () => {
       if (confirm('⚠️ This will delete ALL your data. Are you sure?')) {
-        Voice.stop(); Voice.stopListening();
         ['rh_profile','rh_stats','rh_leaderboard','rh_settings','rh_notes','rh_bookmarks'].forEach(k => Store.remove(k));
         location.reload();
       }
@@ -2755,18 +2421,6 @@ const App = {
     document.getElementById('notes-list').addEventListener('click', (e) => this.handleNotesListClick(e));
     document.getElementById('btn-import-pdf').addEventListener('click', () => document.getElementById('note-pdf-input').click());
     document.getElementById('note-pdf-input').addEventListener('change', (e) => this.handlePdfImport(e));
-
-    // Stop any speech/listening if the tab is hidden or the page unloads,
-    // so audio never keeps talking in the background or after a refresh.
-    document.addEventListener('visibilitychange', () => { if (document.hidden) { Voice.stop(); Voice.stopListening(); } });
-    window.addEventListener('beforeunload', () => { Voice.stop(); Voice.stopListening(); });
-  },
-  setAutoVoice(on) {
-    const settings = Store.getSettings(); settings.voice = on; Store.setSettings(settings);
-    Voice.enabled = on;
-    if (!on) { Voice.stop(); }
-    UI.toast(on ? 'Auto voice reading ON — quiz questions will be read aloud' : 'Auto voice reading OFF', 'info');
-    this.syncSettingsUI();
   },
   startApp() {
     document.getElementById('page-register').style.display = 'none';
@@ -2799,13 +2453,7 @@ const App = {
     const s = Store.getSettings();
     document.getElementById('toggle-dark').classList.toggle('on', s.theme === 'dark');
     document.getElementById('toggle-sound').classList.toggle('on', s.sound);
-    document.getElementById('toggle-voice').classList.toggle('on', !!s.voice);
-    const voiceBtn = document.getElementById('btn-voice-toggle');
-    if (voiceBtn) {
-      voiceBtn.classList.toggle('on', !!s.voice);
-      voiceBtn.textContent = s.voice ? '🔊' : '🔇';
-      voiceBtn.title = s.voice ? 'Auto voice reading is ON — tap to turn off' : 'Auto voice reading is OFF — tap to turn on';
-    }
+    document.getElementById('toggle-voice').classList.toggle('on', s.voice);
     const fsSel = document.getElementById('font-size-select'); if (fsSel) fsSel.value = s.fontSize;
   },
   toggleTheme() {

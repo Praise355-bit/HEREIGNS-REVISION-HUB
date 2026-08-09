@@ -635,6 +635,7 @@ body {
 .q-pill.hard   { background: rgba(30,58,138,0.2); color: var(--blue-dark); border: 1px solid rgba(30,58,138,0.3); }
 .q-pill.subject { background: rgba(14,165,233,0.2); color: var(--cyan-blue); border: 1px solid rgba(14,165,233,0.3); }
 .q-pill.bookmarked { background: rgba(96,165,250,0.25); color: var(--blue-bright); border: 1px solid rgba(96,165,250,0.4); cursor:pointer; }
+.q-pill.exam { background: rgba(14,165,233,0.18); color: var(--cyan-blue); border: 1px solid rgba(14,165,233,0.35); }
 
 .question-text { font-family: var(--font-display); font-size: 17px; font-weight: 600; line-height: 1.7; }
 
@@ -996,10 +997,19 @@ body {
   transition: all 0.2s;
   border: none; background: none;
   font-family: var(--font-body);
+  position: relative;
 }
 .mobile-nav-item .mn-icon { font-size: 22px; transition: transform 0.2s; }
 .mobile-nav-item.active { color: var(--blue-bright); }
 .mobile-nav-item.active .mn-icon { transform: scale(1.2); }
+.mn-dot {
+  position: absolute; top: 2px; right: 10px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--blue-light);
+  box-shadow: 0 0 8px rgba(59,130,246,0.7);
+  display: none;
+}
+.mn-dot.show { display: block; }
 
 /* =========================================================
    RESPONSIVE
@@ -1279,6 +1289,56 @@ body {
 .daily-goal-fill { height: 100%; background: var(--grad-progress); border-radius: 20px; transition: width 0.5s; }
 
 /* =========================================================
+   DUE-FOR-REVIEW WIDGET (spaced repetition)
+   ========================================================= */
+.due-review-card {
+  padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(14,165,233,0.12), rgba(37,99,235,0.08));
+  border: 2px solid rgba(14,165,233,0.3);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.due-review-icon { font-size: 30px; }
+.due-review-body { flex: 1; min-width: 180px; }
+.due-review-body strong { font-family: var(--font-display); font-size: 14px; display: block; }
+.due-review-body small { color: var(--text-secondary); font-size: 12px; }
+.due-review-card .btn-primary { width: auto; padding: 10px 20px; }
+.due-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  background: var(--cyan-blue); color: #06060e;
+  border-radius: 20px; font-size: 10px; font-weight: 800;
+  margin-left: 6px; box-shadow: 0 0 10px rgba(14,165,233,0.6);
+}
+
+/* =========================================================
+   EXAM MODE
+   ========================================================= */
+.exam-mode-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; margin-bottom: 14px;
+  background: rgba(30,58,138,0.15);
+  border: 1.5px solid rgba(30,58,138,0.4);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px; color: var(--blue-bright); font-weight: 600;
+}
+.exam-review-toggle { margin-bottom: 14px; }
+
+/* =========================================================
+   STUDY PLAN
+   ========================================================= */
+.study-plan-box {
+  margin-top: 14px; padding: 16px 18px;
+  background: rgba(37,99,235,0.08);
+  border: 1.5px solid rgba(37,99,235,0.25);
+  border-radius: var(--radius-md);
+  font-size: 13.5px; line-height: 1.75; white-space: pre-wrap;
+  display: none;
+}
+.study-plan-box.show { display: block; animation: fadeSlideIn 0.3s ease; }
+
+/* =========================================================
    AI TUTOR
    ========================================================= */
 .tutor-wrap { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h) - 140px); min-height: 420px; }
@@ -1310,6 +1370,12 @@ body {
 }
 .tutor-input-row input { flex: 1; }
 .tutor-input-row button { width: auto; padding: 0 22px; }
+.tutor-mic-btn {
+  width: 46px; flex-shrink: 0; padding: 0 !important;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+}
+.tutor-mic-btn.listening { color: var(--cyan-blue); border-color: var(--cyan-blue); animation: speakPulse 1s infinite; }
 .tutor-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .tutor-suggest-chip {
   padding: 8px 14px; border-radius: 20px; font-size: 12.5px; cursor: pointer;
@@ -1320,6 +1386,7 @@ body {
 .tutor-subject-select { width: 200px; }
 .tutor-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .tutor-clear-btn { margin-left: auto; width: auto; padding: 8px 14px; font-size: 12.5px; }
+.tutor-plan-btn { width: auto; padding: 8px 14px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -1353,8 +1420,7 @@ body {
       <label class="form-label">Arm / Stream</label>
       <select class="form-select" id="reg-arm">
         <option value="">Select arm</option>
-        <option>A</option><option>B</option><option>C</option>
-        <option>D</option><option>E</option><option>Science</option>
+        <option>Science</option>
         <option>Art</option><option>Commercial</option>
       </select>
     </div>
@@ -1415,7 +1481,7 @@ body {
   <div class="modal-box" style="max-width:420px;">
     <button class="modal-close" data-close-modal="flashcard-viewer-modal">✕</button>
     <h2 id="flashcard-viewer-title">🗂️ Flashcards</h2>
-    <div class="modal-sub">Tap the card to flip it. Mark what you know as you go.</div>
+    <div class="modal-sub" id="flashcard-viewer-sub">Tap the card to flip it. Mark what you know as you go.</div>
     <div class="flashcard-stage">
       <div class="flashcard-progress" id="flashcard-progress">Card 1 of 10</div>
       <div class="flashcard-scene" id="flashcard-scene">
@@ -1433,6 +1499,56 @@ body {
         <button class="btn-secondary" id="btn-fc-shuffle">🔀 Shuffle</button>
         <button class="btn-secondary" id="btn-fc-next">Next →</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXAM MODE CONFIRM MODAL -->
+<div class="modal-overlay" id="exam-mode-modal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal="exam-mode-modal">✕</button>
+    <h2>⏱️ Exam Mode</h2>
+    <div class="modal-sub">Simulate real exam conditions — one overall timer, no feedback until you submit. Set your time limit below.</div>
+    <div class="option-group">
+      <label>Time Limit</label>
+      <div class="pill-options" id="exam-time-pills">
+        <button class="pill-option" data-mins="10">10 min</button>
+        <button class="pill-option active" data-mins="20">20 min</button>
+        <button class="pill-option" data-mins="30">30 min</button>
+        <button class="pill-option" data-mins="45">45 min</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="exam-mode-start">Start Exam →</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDY PLAN CONFIG MODAL -->
+<div class="modal-overlay" id="study-plan-modal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal="study-plan-modal">✕</button>
+    <h2>🗓️ AI Study Plan</h2>
+    <div class="modal-sub">The tutor will build a personalised revision timetable using your performance data and weak subjects.</div>
+    <div class="option-group">
+      <label>Days Until Exam</label>
+      <div class="pill-options" id="study-plan-days-pills">
+        <button class="pill-option" data-days="3">3 days</button>
+        <button class="pill-option active" data-days="7">1 week</button>
+        <button class="pill-option" data-days="14">2 weeks</button>
+        <button class="pill-option" data-days="30">1 month</button>
+      </div>
+    </div>
+    <div class="option-group" style="margin-top:14px;">
+      <label>Study Hours Per Day</label>
+      <div class="pill-options" id="study-plan-hours-pills">
+        <button class="pill-option" data-hours="1">1 hr</button>
+        <button class="pill-option active" data-hours="2">2 hrs</button>
+        <button class="pill-option" data-hours="4">4 hrs</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="study-plan-generate">Generate Plan →</button>
     </div>
   </div>
 </div>
@@ -1462,6 +1578,7 @@ body {
       </div>
       <div class="nav-item" data-page="notes">
         <span class="nav-icon">📝</span> Notes
+        <span class="nav-badge" id="nav-badge-notes" style="display:none;">0</span>
       </div>
       <div class="nav-item" data-page="tutor">
         <span class="nav-icon">🤖</span> AI Tutor
@@ -1510,6 +1627,16 @@ body {
         <div class="page-header">
           <h2 id="dash-greeting">Good morning! 👋</h2>
           <p id="dash-subtext">Here's your study overview</p>
+        </div>
+
+        <!-- Due for review (spaced repetition) -->
+        <div class="due-review-card" id="due-review-card" style="display:none;">
+          <div class="due-review-icon">🗂️</div>
+          <div class="due-review-body">
+            <strong id="due-review-title">0 flashcards due for review</strong>
+            <small>Spaced repetition helps lock in long-term memory — a few minutes now saves hours later</small>
+          </div>
+          <button class="btn-primary" id="btn-due-review">🔁 Review Now</button>
         </div>
 
         <!-- Daily Goals -->
@@ -1623,6 +1750,13 @@ body {
               </div>
             </div>
           </div>
+          <div class="option-group" style="margin-bottom:18px;">
+            <label>Mode</label>
+            <div class="pill-options">
+              <button class="pill-option active" data-mode="practice">📖 Practice (instant feedback)</button>
+              <button class="pill-option" data-mode="exam">⏱️ Exam Mode (timed, no hints)</button>
+            </div>
+          </div>
           <button class="btn-primary" id="btn-start-quiz">Generate Questions with AI →</button>
         </div>
       </section>
@@ -1685,6 +1819,7 @@ body {
           <select class="form-select tutor-subject-select" id="tutor-subject-select">
             <option value="">General / Any Subject</option>
           </select>
+          <button class="btn-secondary tutor-plan-btn" id="btn-tutor-plan">🗓️ Study Plan</button>
           <button class="btn-secondary tutor-clear-btn" id="btn-tutor-clear">🗑️ Clear Chat</button>
         </div>
         <div class="tutor-wrap">
@@ -1695,6 +1830,7 @@ body {
             <span class="tutor-suggest-chip" data-q="Help me create a revision plan">Help me create a revision plan</span>
           </div>
           <div class="tutor-input-row">
+            <button class="btn-secondary tutor-mic-btn" id="btn-tutor-mic" title="Speak your question">🎤</button>
             <input class="form-input" id="tutor-input" type="text" placeholder="Ask your tutor anything…" />
             <button class="btn-primary" id="btn-tutor-send" style="width:auto;">Send</button>
           </div>
@@ -1703,6 +1839,9 @@ body {
 
       <!-- ========== QUIZ ENGINE ========== -->
       <section class="page" id="page-quiz">
+        <div class="exam-mode-banner" id="exam-mode-banner" style="display:none;">
+          ⏱️ Exam Mode — answers are hidden until you submit the whole quiz. Stay focused!
+        </div>
         <div class="quiz-header">
           <div class="quiz-progress-text" id="quiz-progress-text">Question 1 of 10</div>
           <div class="quiz-timer" id="quiz-timer">
@@ -1903,6 +2042,7 @@ body {
       </button>
       <button class="mobile-nav-item" data-page="notes">
         <span class="mn-icon">📝</span>Notes
+        <span class="mn-dot" id="mn-dot-notes"></span>
       </button>
       <button class="mobile-nav-item" data-page="tutor">
         <span class="mn-icon">🤖</span>Tutor
@@ -2026,6 +2166,9 @@ const ACHIEVEMENTS_CONFIG = [
   { id: 'goal_streak_3', name: 'Goal Getter',      icon: '🎯', desc: 'Complete all daily goals 3 days in a row' },
   { id: 'goal_streak_7', name: 'Consistency King',  icon: '👑', desc: 'Complete all daily goals 7 days in a row' },
   { id: 'tutor_curious', name: 'Curious Mind',      icon: '🤖', desc: 'Ask the AI Tutor 10 questions' },
+  { id: 'exam_survivor', name: 'Exam Survivor',    icon: '🎓', desc: 'Complete a quiz in Exam Mode' },
+  { id: 'planner',       name: 'Master Planner',   icon: '🗓️', desc: 'Generate an AI study plan' },
+  { id: 'reviewer',      name: 'Spaced Out',       icon: '🔁', desc: 'Complete a spaced-repetition review session' },
 ];
 
 const Store = {
@@ -2164,6 +2307,18 @@ const Groq = {
     const convo = history.map(m => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`).join('\n');
     const prompt = `You are a warm, patient, expert Nigerian secondary school tutor helping a ${studentClass || ''} student prepare for WAEC/NECO exams${subjectLabel ? ` in ${subjectLabel}` : ''}. Continue the conversation below naturally. Keep answers clear, encouraging, exam-focused, and not overly long (use short paragraphs or bullet points where helpful). If the student asks for practice questions, include the correct answer and a brief explanation.\n\n--- CONVERSATION SO FAR ---\n${convo}\n\nRespond ONLY as the Tutor's next message, no preamble, no "Tutor:" prefix.`.trim();
     const raw = await this.chat(prompt, { temperature: 0.65, max_tokens: 900 });
+    return raw.trim();
+  },
+  async generateStudyPlan(stats, days, hoursPerDay, studentClass, subjectNames) {
+    const weakSubjects = Object.entries(stats.subjectMap || {})
+      .map(([name, d]) => ({ name, pct: d.total > 0 ? Math.round(d.correct / d.total * 100) : 0 }))
+      .sort((a, b) => a.pct - b.pct);
+    const weakList = weakSubjects.length
+      ? weakSubjects.map(s => `${s.name} (${s.pct}% accuracy)`).join(', ')
+      : 'No quiz history yet — treat all subjects as equal priority.';
+    const subjectPool = subjectNames && subjectNames.length ? subjectNames.join(', ') : 'core WAEC/NECO subjects';
+    const prompt = `You are an expert study coach for a Nigerian ${studentClass || 'secondary school'} student preparing for WAEC/NECO exams. Build a personalised ${days}-day revision timetable, ${hoursPerDay} hour(s) of study per day.\n\nStudent's performance so far (weakest to strongest): ${weakList}\nSubjects available: ${subjectPool}\n\nPrioritise the weakest subjects with more time, but include some review of stronger subjects too. For each day, list the date as "Day N", the subject(s) to cover, and 1-2 concrete focus topics or activities (e.g. "practice past questions", "review key terms", "take a quiz"). Keep it realistic and motivating. Format as plain text with clear "Day N:" headings, no markdown symbols like # or **.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 1800 });
     return raw.trim();
   }
 };
@@ -2355,9 +2510,63 @@ const DailyGoals = {
   }
 };
 
+/* ===================== SPACED REPETITION ===================== */
+const SpacedRepetition = {
+  // Lightweight SM-2-style scheduler for flashcards.
+  // Each card in a note's flashcards array gains: interval (days), ease, dueAt (ISO date), reps.
+  DAY_MS: 86400000,
+  ensureSchedule(card) {
+    if (card.dueAt === undefined) {
+      card.interval = 0; card.ease = 2.5; card.reps = 0;
+      card.dueAt = new Date().toISOString();
+    }
+    return card;
+  },
+  isDue(card) {
+    if (!card.dueAt) return true;
+    return new Date(card.dueAt).getTime() <= Date.now();
+  },
+  schedule(card, known) {
+    this.ensureSchedule(card);
+    if (known) {
+      card.reps = (card.reps || 0) + 1;
+      card.ease = Math.max(1.3, (card.ease || 2.5) + 0.1);
+      if (card.reps === 1) card.interval = 1;
+      else if (card.reps === 2) card.interval = 3;
+      else card.interval = Math.round((card.interval || 1) * card.ease);
+    } else {
+      card.reps = 0;
+      card.ease = Math.max(1.3, (card.ease || 2.5) - 0.2);
+      card.interval = 0; // due again today
+    }
+    card.dueAt = new Date(Date.now() + Math.max(card.interval, card.interval === 0 ? 0.02 : card.interval) * this.DAY_MS).toISOString();
+    return card;
+  },
+  getDueCards() {
+    const notes = Store.getNotes();
+    const due = [];
+    notes.forEach(n => {
+      (n.flashcards || []).forEach(c => {
+        this.ensureSchedule(c);
+        if (this.isDue(c)) due.push({ ...c, _noteId: n.id, _subject: n.subject });
+      });
+    });
+    return due;
+  },
+  countDue() { return this.getDueCards().length; },
+  persistCardUpdate(noteId, cardFront, updatedCard) {
+    const notes = Store.getNotes();
+    const note = notes.find(n => n.id === noteId);
+    if (!note || !note.flashcards) return;
+    const idx = note.flashcards.findIndex(c => c.front === cardFront);
+    if (idx >= 0) { note.flashcards[idx] = { ...note.flashcards[idx], ...updatedCard }; Store.setNotes(notes); }
+  }
+};
+
 /* ===================== AI TUTOR ===================== */
 const Tutor = {
   sending: false,
+  listening: false,
   init() {
     document.getElementById('btn-tutor-send').addEventListener('click', () => this.send());
     document.getElementById('tutor-input').addEventListener('keydown', e => { if (e.key === 'Enter') this.send(); });
@@ -2369,17 +2578,44 @@ const Tutor = {
       document.getElementById('tutor-input').value = chip.dataset.q;
       this.send();
     });
+    const micBtn = document.getElementById('btn-tutor-mic');
+    if (micBtn) {
+      if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) {
+        micBtn.style.opacity = '0.4'; micBtn.title = 'Voice input not supported in this browser';
+      }
+      micBtn.addEventListener('click', () => this.toggleMic());
+    }
+    document.getElementById('btn-tutor-plan').addEventListener('click', () => {
+      UI.openModal('study-plan-modal');
+    });
     const subSelect = document.getElementById('tutor-subject-select');
     if (subSelect.children.length <= 1) {
       const names = Array.from(new Set(SUBJECTS.JSS.concat(SUBJECTS.SS).map(s => s.name)));
       subSelect.innerHTML = `<option value="">General / Any Subject</option>` + names.map(n => `<option value="${n}">${n}</option>`).join('');
     }
   },
+  toggleMic() {
+    const micBtn = document.getElementById('btn-tutor-mic');
+    if (this.listening) { this.listening = false; micBtn.classList.remove('listening'); return; }
+    this.listening = true; micBtn.classList.add('listening');
+    Voice.listenOnce(
+      (transcript) => {
+        this.listening = false; micBtn.classList.remove('listening');
+        const input = document.getElementById('tutor-input');
+        input.value = transcript;
+        this.send();
+      },
+      (err) => {
+        this.listening = false; micBtn.classList.remove('listening');
+        UI.toast('Voice input error: ' + err, 'error');
+      }
+    );
+  },
   render() {
     const chat = Store.getTutorChat();
     const wrap = document.getElementById('tutor-messages');
     if (chat.length === 0) {
-      wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🤖</span>Ask me anything about your subjects — I'm here to help you revise!</div>`;
+      wrap.innerHTML = `<div class="empty-state"><span class="empty-icon">🤖</span>Ask me anything about your subjects — I'm here to help you revise! You can also tap 🎤 to speak your question.</div>`;
     } else {
       wrap.innerHTML = chat.map(m => `
         <div class="tutor-msg ${m.role}">
@@ -2430,11 +2666,40 @@ const Tutor = {
         const achievements = stats.achievements || [];
         if (!achievements.includes('tutor_curious')) { achievements.push('tutor_curious'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Curious Mind!', 'success', 4000); }
       }
+      if (Store.getSettings().voice) { Voice.speak(reply); }
     } catch (err) {
       typingEl.remove();
       UI.toast('Tutor error: ' + err.message, 'error');
     } finally {
       this.sending = false;
+    }
+  },
+  async generateStudyPlan(days, hours) {
+    const stats = Store.getStats();
+    const profile = Store.getProfile();
+    const subjectNames = Array.from(new Set(SUBJECTS.JSS.concat(SUBJECTS.SS).map(s => s.name)));
+    UI.navigate('tutor');
+    const chat = Store.getTutorChat();
+    chat.push({ role: 'user', content: `Please build me a ${days}-day study plan (${hours} hr/day) based on my performance.` });
+    Store.setTutorChat(chat);
+    this.render();
+    const wrap = document.getElementById('tutor-messages');
+    const typingEl = document.createElement('div');
+    typingEl.className = 'tutor-msg assistant';
+    typingEl.innerHTML = `<div class="tutor-msg-avatar">🤖</div><div class="tutor-msg-bubble typing"><span class="tutor-dot"></span><span class="tutor-dot"></span><span class="tutor-dot"></span></div>`;
+    wrap.appendChild(typingEl); wrap.scrollTop = wrap.scrollHeight;
+    try {
+      const plan = await Groq.generateStudyPlan(stats, days, hours, profile ? profile.class : '', subjectNames);
+      const updated = Store.getTutorChat();
+      updated.push({ role: 'assistant', content: plan });
+      Store.setTutorChat(updated);
+      this.render();
+      const st = Store.getStats();
+      const achievements = st.achievements || [];
+      if (!achievements.includes('planner')) { achievements.push('planner'); st.achievements = achievements; Store.setStats(st); UI.toast('🏅 Achievement unlocked: Master Planner!', 'success', 4000); }
+    } catch (err) {
+      typingEl.remove();
+      UI.toast('Could not generate study plan: ' + err.message, 'error');
     }
   }
 };
@@ -2443,7 +2708,8 @@ const Quiz = {
   questions: [], current: 0, answers: {}, startTime: 0,
   timerInterval: null, timeLeft: 60, subject: '', difficulty: '', totalQuestions: 10, locked: false,
   fromNotes: false, bookmarked: {}, reviewMode: false,
-  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; clearInterval(this.timerInterval); },
+  examMode: false, examSecondsTotal: 0, examSecondsLeft: 0, examTimerInterval: null,
+  reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; this.examMode = false; clearInterval(this.timerInterval); clearInterval(this.examTimerInterval); },
   startTimer() {
     this.timeLeft = 60; this.updateTimerDisplay();
     clearInterval(this.timerInterval);
@@ -2455,6 +2721,27 @@ const Quiz = {
         setTimeout(() => this.advance(), 800);
       }
     }, 1000);
+  },
+  startExamTimer() {
+    document.getElementById('quiz-timer').style.display = 'flex';
+    this.examSecondsLeft = this.examSecondsTotal;
+    this.updateExamTimerDisplay();
+    clearInterval(this.examTimerInterval);
+    this.examTimerInterval = setInterval(() => {
+      this.examSecondsLeft--; this.updateExamTimerDisplay();
+      if (this.examSecondsLeft <= 0) {
+        clearInterval(this.examTimerInterval);
+        UI.toast('⏰ Time is up! Submitting your exam…', 'info', 3000);
+        this.finish();
+      }
+    }, 1000);
+  },
+  updateExamTimerDisplay() {
+    const el = document.getElementById('timer-display');
+    if (!el) return;
+    const m = Math.floor(this.examSecondsLeft / 60); const s = this.examSecondsLeft % 60;
+    el.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    el.parentElement.classList.toggle('timer-warn', this.examSecondsLeft <= 60);
   },
   updateTimerDisplay() {
     const el = document.getElementById('timer-display');
@@ -2485,7 +2772,11 @@ const Quiz = {
       li.className = 'option-item'; li.dataset.key = key;
       li.innerHTML = `<div class="option-label">${key}</div><div class="option-text">${q.options[key]}</div>`;
       const prev = this.answers[this.current];
-      if (prev !== undefined) {
+      if (this.examMode) {
+        // Exam mode: allow changing answer freely, no correctness shown, just selection state
+        li.classList.toggle('selected', prev === key);
+        li.addEventListener('click', () => this.selectExamAnswer(key));
+      } else if (prev !== undefined) {
         this.locked = true; li.classList.add('locked');
         if (key === q.answer) li.classList.add('correct');
         if (key === prev && prev !== q.answer) li.classList.add('wrong');
@@ -2496,21 +2787,26 @@ const Quiz = {
     });
     const expBox = document.getElementById('explanation-box');
     const prevAns = this.answers[this.current];
-    if (prevAns !== undefined) {
+    if (!this.examMode && prevAns !== undefined) {
       document.getElementById('explanation-text').textContent = q.explanation;
       expBox.classList.add('show');
     } else { expBox.classList.remove('show'); }
     document.getElementById('btn-prev').disabled = this.current === 0;
     const isLast = this.current === this.questions.length - 1;
     const nextBtn = document.getElementById('btn-next');
-    nextBtn.textContent = isLast ? 'Finish Quiz ✓' : 'Next →';
+    nextBtn.textContent = isLast ? (this.examMode ? 'Submit Exam ✓' : 'Finish Quiz ✓') : 'Next →';
     const settings = Store.getSettings();
     if (settings.voice) {
       const readText = `Question ${this.current+1}. ${q.question}. Option A: ${q.options.A}. Option B: ${q.options.B}. Option C: ${q.options.C}. Option D: ${q.options.D}.`;
       Voice.speak(readText);
     }
-    if (prevAns === undefined && !this.reviewMode) this.startTimer();
+    if (this.examMode) { clearInterval(this.timerInterval); }
+    else if (prevAns === undefined && !this.reviewMode) this.startTimer();
     else clearInterval(this.timerInterval);
+  },
+  selectExamAnswer(key) {
+    this.answers[this.current] = key;
+    document.querySelectorAll('.option-item').forEach(li => { li.classList.toggle('selected', li.dataset.key === key); });
   },
   selectAnswer(key) {
     if (this.locked) return;
@@ -2546,12 +2842,19 @@ const Quiz = {
     const isLast = this.current === this.questions.length - 1;
     if (isLast) { this.finish(); } else { this.current++; this.renderQuestion(); }
   },
-  goBack() { if (this.current > 0) { this.current--; this.renderQuestion(); clearInterval(this.timerInterval); } },
+  goBack() { if (this.current > 0) { this.current--; this.renderQuestion(); if (!this.examMode) clearInterval(this.timerInterval); } },
   finish() {
-    clearInterval(this.timerInterval); Voice.stop();
+    clearInterval(this.timerInterval); clearInterval(this.examTimerInterval); Voice.stop();
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
     let correct = 0; const wrong = [];
-    this.questions.forEach((q, i) => { if (this.answers[i] === q.answer) { correct++; } else { wrong.push({ q, chosen: this.answers[i], index: i }); } });
+    this.questions.forEach((q, i) => {
+      if (this.examMode && !DailyGoals) {} // no-op guard
+      if (this.answers[i] === q.answer) { correct++; } else { wrong.push({ q, chosen: this.answers[i], index: i }); }
+    });
+    if (this.examMode) {
+      // Exam mode records questions to daily goals only at submission time
+      DailyGoals.recordQuestions(this.questions.length);
+    }
     const total = this.questions.length; const pct = Math.round((correct / total) * 100);
 
     // Save bookmarked questions for later review
@@ -2571,7 +2874,8 @@ const Quiz = {
     }
 
     const diffBonus = { Easy: 1, Medium: 1.5, Hard: 2 };
-    const xpEarned = Math.round(correct * 10 * (diffBonus[this.difficulty] || 1));
+    let xpEarned = Math.round(correct * 10 * (diffBonus[this.difficulty] || 1));
+    if (this.examMode) xpEarned = Math.round(xpEarned * 1.25); // exam-mode bonus
     const stats = Store.getStats();
     stats.quizzes++; stats.totalQ += total; stats.correct += correct; stats.xp += xpEarned;
     if (!stats.subjectMap[this.subject]) { stats.subjectMap[this.subject] = { total: 0, correct: 0 }; }
@@ -2579,7 +2883,7 @@ const Quiz = {
     const today = new Date().toDateString(); const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (stats.lastDate === yesterday) stats.streak++; else if (stats.lastDate !== today) stats.streak = 1;
     stats.lastDate = today;
-    stats.history.push({ subject: this.subject, difficulty: this.difficulty, score: pct, correct, total, xp: xpEarned, time: elapsed, date: new Date().toLocaleDateString() });
+    stats.history.push({ subject: this.subject, difficulty: this.difficulty, score: pct, correct, total, xp: xpEarned, time: elapsed, date: new Date().toLocaleDateString(), examMode: this.examMode });
     if (stats.history.length > 50) stats.history = stats.history.slice(-50);
     if (!stats.studiedSubjects.includes(this.subject)) { stats.studiedSubjects.push(this.subject); }
     Store.setStats(stats);
@@ -2603,6 +2907,8 @@ const Quiz = {
     this.subject = 'Bookmarked Review'; this.difficulty = 'Medium';
     this.questions = bookmarks; this.startTime = Date.now();
     UI.navigate('quiz');
+    document.getElementById('exam-mode-banner').style.display = 'none';
+    document.getElementById('quiz-timer').style.display = 'flex';
     document.getElementById('quiz-loading').style.display = 'none';
     document.getElementById('quiz-question-wrap').style.display = 'block';
     this.renderQuestion();
@@ -2610,11 +2916,16 @@ const Quiz = {
 };
 
 const Flashcards = {
-  cards: [], current: 0, flipped: false, noteId: null, knownIds: {},
-  open(cards, noteId, title) {
+  cards: [], current: 0, flipped: false, noteId: null, knownIds: {}, spacedMode: false,
+  open(cards, noteId, title, spacedMode) {
     this.cards = cards.map((c, i) => ({ ...c, _id: i }));
     this.current = 0; this.flipped = false; this.noteId = noteId; this.knownIds = {};
+    this.spacedMode = !!spacedMode;
     document.getElementById('flashcard-viewer-title').textContent = `🗂️ ${title || 'Flashcards'}`;
+    const subEl = document.getElementById('flashcard-viewer-sub');
+    if (subEl) subEl.textContent = spacedMode
+      ? 'Spaced-repetition review — mark honestly so the schedule adapts to you.'
+      : "Tap the card to flip it. Mark what you know as you go.";
     UI.openModal('flashcard-viewer-modal');
     this.render();
   },
@@ -2631,7 +2942,13 @@ const Flashcards = {
     this.flipped = !this.flipped;
     document.getElementById('flashcard-inner').classList.toggle('flipped', this.flipped);
   },
-  next() { this.current = (this.current + 1) % this.cards.length; this.render(); },
+  next() {
+    if (this.current >= this.cards.length - 1) {
+      if (this.spacedMode) { UI.toast('🔁 Review session complete!', 'success', 2500); this.finishSpacedSession(); }
+      this.current = 0;
+    } else { this.current++; }
+    this.render();
+  },
   prev() { this.current = (this.current - 1 + this.cards.length) % this.cards.length; this.render(); },
   shuffle() {
     for (let i = this.cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]]; }
@@ -2640,6 +2957,10 @@ const Flashcards = {
   markKnown(known) {
     const card = this.cards[this.current];
     this.knownIds[card._id] = known;
+    if (this.spacedMode && card._noteId) {
+      const updated = SpacedRepetition.schedule({ front: card.front, back: card.back, interval: card.interval, ease: card.ease, reps: card.reps, dueAt: card.dueAt }, known);
+      SpacedRepetition.persistCardUpdate(card._noteId, card.front, updated);
+    }
     if (known) {
       const stats = Store.getStats();
       stats.knownFlashcards = (stats.knownFlashcards || 0) + 1;
@@ -2647,11 +2968,17 @@ const Flashcards = {
       App.checkFlashcardAchievements(stats);
     }
     this.next();
+  },
+  finishSpacedSession() {
+    const stats = Store.getStats();
+    const achievements = stats.achievements || [];
+    if (!achievements.includes('reviewer')) { achievements.push('reviewer'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Spaced Out!', 'success', 4000); }
+    App.updateDueReviewWidget();
   }
 };
 
 const App = {
-  selectedSubject: null, selectedDifficulty: 'Easy', selectedCount: 10, currentClass: 'JSS1',
+  selectedSubject: null, selectedDifficulty: 'Easy', selectedCount: 10, selectedMode: 'practice', currentClass: 'JSS1',
   _pendingNoteQuiz: null, _pendingFlashcard: null,
   init() {
     Voice.init(); Confetti.init(); this.applySettings(); Tutor.init();
@@ -2677,6 +3004,7 @@ const App = {
       this.syncSettingsUI();
     });
     document.getElementById('btn-next').addEventListener('click', () => {
+      if (Quiz.examMode) { Quiz.advance(); return; }
       if (Quiz.answers[Quiz.current] !== undefined || Quiz.locked) { Quiz.advance(); } else { UI.toast('Please select an answer first', 'error'); }
     });
     document.getElementById('btn-prev').addEventListener('click', () => Quiz.goBack());
@@ -2748,6 +3076,30 @@ const App = {
       if (this._pendingFlashcard) { const { noteId } = this._pendingFlashcard; this.generateFlashcardsForNote(noteId, count); }
     });
 
+    // Exam mode modal
+    document.querySelectorAll('#exam-time-pills .pill-option').forEach(p => {
+      p.addEventListener('click', () => { document.querySelectorAll('#exam-time-pills .pill-option').forEach(x => x.classList.remove('active')); p.classList.add('active'); });
+    });
+    document.getElementById('exam-mode-start').addEventListener('click', () => {
+      const mins = parseInt(document.querySelector('#exam-time-pills .pill-option.active').dataset.mins);
+      UI.closeModal('exam-mode-modal');
+      this.startQuizSession(true, mins);
+    });
+
+    // Study plan modal
+    document.querySelectorAll('#study-plan-days-pills .pill-option').forEach(p => {
+      p.addEventListener('click', () => { document.querySelectorAll('#study-plan-days-pills .pill-option').forEach(x => x.classList.remove('active')); p.classList.add('active'); });
+    });
+    document.querySelectorAll('#study-plan-hours-pills .pill-option').forEach(p => {
+      p.addEventListener('click', () => { document.querySelectorAll('#study-plan-hours-pills .pill-option').forEach(x => x.classList.remove('active')); p.classList.add('active'); });
+    });
+    document.getElementById('study-plan-generate').addEventListener('click', () => {
+      const days = parseInt(document.querySelector('#study-plan-days-pills .pill-option.active').dataset.days);
+      const hours = parseInt(document.querySelector('#study-plan-hours-pills .pill-option.active').dataset.hours);
+      UI.closeModal('study-plan-modal');
+      Tutor.generateStudyPlan(days, hours);
+    });
+
     // Flashcard viewer controls
     document.getElementById('flashcard-scene').addEventListener('click', () => Flashcards.flip());
     document.getElementById('btn-fc-next').addEventListener('click', () => Flashcards.next());
@@ -2762,6 +3114,9 @@ const App = {
     document.getElementById('notes-list').addEventListener('click', (e) => this.handleNotesListClick(e));
     document.getElementById('btn-import-pdf').addEventListener('click', () => document.getElementById('note-pdf-input').click());
     document.getElementById('note-pdf-input').addEventListener('change', (e) => this.handlePdfImport(e));
+
+    // Due-for-review widget
+    document.getElementById('btn-due-review').addEventListener('click', () => this.startDueReview());
   },
   startApp() {
     document.getElementById('page-register').style.display = 'none';
@@ -2804,12 +3159,37 @@ const App = {
     document.getElementById('btn-theme').textContent = next === 'dark' ? '🌙' : '☀️';
     const s = Store.getSettings(); s.theme = next; Store.setSettings(s); this.syncSettingsUI();
   },
+  updateDueReviewWidget() {
+    const dueCount = SpacedRepetition.countDue();
+    const card = document.getElementById('due-review-card');
+    if (!card) return;
+    if (dueCount > 0) {
+      card.style.display = 'flex';
+      document.getElementById('due-review-title').textContent = `${dueCount} flashcard${dueCount === 1 ? '' : 's'} due for review`;
+    } else {
+      card.style.display = 'none';
+    }
+    // Notes nav badge doubles as a due-count indicator
+    const navBadge = document.getElementById('nav-badge-notes');
+    const mnDot = document.getElementById('mn-dot-notes');
+    if (navBadge) {
+      if (dueCount > 0) { navBadge.style.display = 'inline-flex'; navBadge.textContent = dueCount; }
+      else { navBadge.style.display = 'none'; }
+    }
+    if (mnDot) { mnDot.classList.toggle('show', dueCount > 0); }
+  },
+  startDueReview() {
+    const due = SpacedRepetition.getDueCards();
+    if (due.length === 0) { UI.toast('Nothing due right now — great job staying ahead!', 'info'); return; }
+    Flashcards.open(due, null, 'Due for Review', true);
+  },
   renderDashboard() {
     const stats = Store.getStats(); const profile = Store.getProfile(); if (!profile) return;
     const hour = new Date().getHours(); const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('dash-greeting').textContent = `${greet}, ${profile.name.split(' ')[0]}! 👋`;
     document.getElementById('dash-subtext').textContent = `${profile.class} ${profile.arm} • ${new Date().toDateString()}`;
     DailyGoals.renderCard();
+    this.updateDueReviewWidget();
     const accuracy = stats.totalQ > 0 ? Math.round((stats.correct / stats.totalQ) * 100) : 0;
     document.getElementById('stat-quizzes').textContent  = stats.quizzes;
     document.getElementById('stat-accuracy').textContent = accuracy + '%';
@@ -2833,7 +3213,7 @@ const App = {
       container.innerHTML = recent.map(r => `
         <div class="recent-item">
           <div class="recent-badge">${SUBJECTS.JSS.concat(SUBJECTS.SS).find(s=>s.name===r.subject)?.emoji||'📚'}</div>
-          <div class="recent-info"><strong>${r.subject}</strong><small>${r.difficulty} • ${r.total} Qs • ${r.date}</small></div>
+          <div class="recent-info"><strong>${r.subject}${r.examMode ? ' <span style=\"color:var(--cyan-blue);font-size:11px;\">⏱️ Exam</span>' : ''}</strong><small>${r.difficulty} • ${r.total} Qs • ${r.date}</small></div>
           <div class="recent-score">${r.score}%</div>
         </div>`).join('');
     }
@@ -2875,24 +3255,40 @@ const App = {
         document.getElementById('quiz-config').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     });
-    const diffPills = document.querySelectorAll('[data-diff]'); const countPills = document.querySelectorAll('[data-count]');
+    const diffPills = document.querySelectorAll('#quiz-config [data-diff]'); const countPills = document.querySelectorAll('#quiz-config [data-count]');
+    const modePills = document.querySelectorAll('#quiz-config [data-mode]');
     diffPills.forEach(p => { p.addEventListener('click', () => { diffPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedDifficulty = p.dataset.diff; }); });
     countPills.forEach(p => { p.addEventListener('click', () => { countPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedCount = parseInt(p.dataset.count); }); });
+    modePills.forEach(p => { p.addEventListener('click', () => { modePills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedMode = p.dataset.mode; }); });
     document.getElementById('btn-start-quiz').onclick = () => {
       if (!this.selectedSubject) { UI.toast('Please select a subject', 'error'); return; }
-      this.startQuizSession();
+      if (this.selectedMode === 'exam') { UI.openModal('exam-mode-modal'); }
+      else { this.startQuizSession(); }
     };
   },
-  async startQuizSession() {
+  async startQuizSession(examMode, examMinutes) {
     Quiz.reset(); Quiz.subject = this.selectedSubject; Quiz.difficulty = this.selectedDifficulty; Quiz.totalQuestions = this.selectedCount;
+    Quiz.examMode = !!examMode;
     UI.navigate('quiz'); document.getElementById('quiz-loading').style.display = 'flex'; document.getElementById('quiz-question-wrap').style.display = 'none';
     document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Generating questions with AI…</div>`;
+    document.getElementById('exam-mode-banner').style.display = Quiz.examMode ? 'flex' : 'none';
     try {
       const qs = await Groq.generateQuestions(this.selectedSubject, this.selectedDifficulty, this.selectedCount, this.currentClass);
       Quiz.questions = qs; Quiz.startTime = Date.now();
       document.getElementById('quiz-loading').style.display = 'none';
       document.getElementById('quiz-question-wrap').style.display = 'block';
       Quiz.renderQuestion();
+      if (Quiz.examMode) {
+        Quiz.examSecondsTotal = (examMinutes || 20) * 60;
+        Quiz.startExamTimer();
+        const stats = Store.getStats();
+        const achievements = stats.achievements || [];
+        if (!achievements.includes('exam_survivor')) {
+          // unlock granted on completion in finish(); flagged here is a no-op safeguard
+        }
+      } else {
+        document.getElementById('quiz-timer').style.display = 'flex';
+      }
     } catch (err) {
       document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate questions</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('subjects')">← Go Back</button></div>`;
       console.error('Groq error:', err);
@@ -2902,11 +3298,13 @@ const App = {
     Quiz.reset(); Quiz.subject = subjectLabel; Quiz.difficulty = difficulty; Quiz.totalQuestions = count; Quiz.fromNotes = true;
     UI.navigate('quiz'); document.getElementById('quiz-loading').style.display = 'flex'; document.getElementById('quiz-question-wrap').style.display = 'none';
     document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Generating quiz from your notes…</div>`;
+    document.getElementById('exam-mode-banner').style.display = 'none';
     try {
       const qs = await Groq.generateQuestionsFromNotes(notesText, difficulty, count, subjectLabel);
       Quiz.questions = qs; Quiz.startTime = Date.now();
       document.getElementById('quiz-loading').style.display = 'none';
       document.getElementById('quiz-question-wrap').style.display = 'block';
+      document.getElementById('quiz-timer').style.display = 'flex';
       Quiz.renderQuestion();
     } catch (err) {
       document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate quiz from notes</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('notes')">← Go Back</button></div>`;
@@ -2927,7 +3325,7 @@ const App = {
     else if (pct >= 40) { emoji = '📚'; label = 'Keep studying — you\'ll get there!'; }
     else if (pct >=20){ emoji = '💪'; label = 'Don\'t give up — review and retry!'; }
     document.getElementById('result-emoji').textContent = emoji;
-    document.getElementById('result-label').textContent  = label;
+    document.getElementById('result-label').textContent  = label + (Quiz.examMode ? ' (Exam Mode)' : '');
     const incorrectSection = document.getElementById('incorrect-section');
     if (wrong.length > 0) {
       incorrectSection.style.display = 'block';
@@ -2950,6 +3348,11 @@ const App = {
       document.getElementById('suggest-list').innerHTML = weakTopics.map(t => `<span class="suggest-tag">${t}</span>`).join('');
     } else { suggestSection.style.display = 'none'; }
     document.getElementById('btn-review-bookmarks').style.display = Store.getBookmarks().length > 0 ? 'inline-flex' : 'none';
+    if (Quiz.examMode) {
+      const stats = Store.getStats();
+      const achievements = stats.achievements || [];
+      if (!achievements.includes('exam_survivor')) { achievements.push('exam_survivor'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Exam Survivor!', 'success', 4000); }
+    }
   },
   renderAnalytics() {
     const stats = Store.getStats(); const accuracy = stats.totalQ > 0 ? Math.round((stats.correct / stats.totalQ) * 100) : 0;
@@ -3041,15 +3444,18 @@ const App = {
     if (notes.length === 0) {
       listEl.innerHTML = `<div class="empty-state"><span class="empty-icon">📝</span>No notes yet — add your first note above!</div>`;
       generalCard.style.display = 'none';
+      this.updateDueReviewWidget();
       return;
     }
     generalCard.style.display = 'block';
-    listEl.innerHTML = notes.slice().reverse().map(n => `
+    listEl.innerHTML = notes.slice().reverse().map(n => {
+      const dueCount = (n.flashcards || []).filter(c => SpacedRepetition.isDue(SpacedRepetition.ensureSchedule(c))).length;
+      return `
       <div class="note-card" data-id="${n.id}">
         <div class="note-card-head">
           <span class="q-pill subject">${n.subject}</span>
           <span class="q-pill easy">${n.class}</span>
-          ${n.flashcards && n.flashcards.length ? `<span class="q-pill medium">🗂️ ${n.flashcards.length} cards</span>` : ''}
+          ${n.flashcards && n.flashcards.length ? `<span class="q-pill medium">🗂️ ${n.flashcards.length} cards${dueCount > 0 ? ` • ${dueCount} due` : ''}</span>` : ''}
           <span class="note-card-date">${n.date}</span>
         </div>
         <div class="note-summary-text">${this.formatNoteSummary(n.summary || n.rawText)}</div>
@@ -3071,7 +3477,9 @@ const App = {
         </div>
         <div class="note-qa-answer" id="simplify-answer-${n.id}"></div>
         <div class="note-keyterms-box" id="keyterms-box-${n.id}"></div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    this.updateDueReviewWidget();
   },
   formatNoteSummary(text) {
     const escaped = (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -3195,7 +3603,7 @@ const App = {
     }
     if (action === 'flashcards') {
       if (note.flashcards && note.flashcards.length) {
-        Flashcards.open(note.flashcards, note.id, `${note.subject} Flashcards`);
+        Flashcards.open(note.flashcards, note.id, `${note.subject} Flashcards`, false);
         return;
       }
       this._pendingFlashcard = { noteId: id };
@@ -3222,14 +3630,14 @@ const App = {
     Groq.generateFlashcards(note.rawText, note.subject, count).then(cards => {
       const allNotes = Store.getNotes();
       const idx = allNotes.findIndex(n => n.id === noteId);
-      if (idx >= 0) { allNotes[idx].flashcards = cards; Store.setNotes(allNotes); }
+      if (idx >= 0) { allNotes[idx].flashcards = cards.map(c => SpacedRepetition.ensureSchedule({ ...c })); Store.setNotes(allNotes); }
       this.renderNotes();
       const notesWithCards = allNotes.filter(n => n.flashcards && n.flashcards.length).length;
       if (notesWithCards >= 3) {
         const stats = Store.getStats(); const achievements = stats.achievements || [];
         if (!achievements.includes('flashcard_maker')) { achievements.push('flashcard_maker'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Card Creator!', 'success', 4000); }
       }
-      Flashcards.open(cards, noteId, `${note.subject} Flashcards`);
+      Flashcards.open(allNotes[idx].flashcards, noteId, `${note.subject} Flashcards`, false);
     }).catch(err => { UI.toast('Flashcard generation failed: ' + err.message, 'error'); });
   },
   handleGeneralNotesQuiz() {

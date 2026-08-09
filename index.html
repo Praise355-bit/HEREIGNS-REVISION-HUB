@@ -2308,7 +2308,7 @@ const OpenAI = {
     return parsed;
   },
 
-  // ---------- Study helper methods (unchanged except for using the new chat) ----------
+  // ---------- Study helper methods ----------
 
   async generateQuestions(subject, difficulty, count, studentClass) {
     const prompt = `You are an expert and professional Nigerian secondary school teacher. Generate exactly ${count} high-quality multiple-choice questions for:\n- Subject: ${subject}\n- Class: ${studentClass}\n- Difficulty: ${difficulty}\n- Curriculum: Nigerian educational curriculum (WAEC/NECO standard)\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": {\n      "A": "First option",\n      "B": "Second option",\n      "C": "Third option",\n      "D": "Fourth option"\n    },\n    "answer": "A",\n    "explanation": "Detailed explanation of why A is correct and why others are wrong."\n  }\n]\n\nRules:\n- Questions must be appropriate for ${studentClass} students\n- ${difficulty === 'Easy' ? 'Keep questions foundational and straightforward' : difficulty === 'Medium' ? 'Include moderate application and understanding questions' : 'Include complex analysis, evaluation and higher-order thinking questions'}\n- All 4 options must be plausible\n- Explanations must be clear and educational\n- Generate exactly ${count} questions`.trim();
@@ -2713,7 +2713,7 @@ const Tutor = {
     const subject = document.getElementById('tutor-subject-select').value;
     const profile = Store.getProfile();
     try {
-      const reply = await Groq.tutorReply(chat.slice(-12), subject, profile ? profile.class : '');
+      const reply = await OpenAI.tutorReply(chat.slice(-12), subject, profile ? profile.class : '');
       const updated = Store.getTutorChat();
       updated.push({ role: 'assistant', content: reply });
       Store.setTutorChat(updated);
@@ -2748,7 +2748,7 @@ const Tutor = {
     typingEl.innerHTML = `<div class="tutor-msg-avatar">🤖</div><div class="tutor-msg-bubble typing"><span class="tutor-dot"></span><span class="tutor-dot"></span><span class="tutor-dot"></span></div>`;
     wrap.appendChild(typingEl); wrap.scrollTop = wrap.scrollHeight;
     try {
-      const plan = await Groq.generateStudyPlan(stats, days, hours, profile ? profile.class : '', subjectNames);
+      const plan = await OpenAI.generateStudyPlan(stats, days, hours, profile ? profile.class : '', subjectNames);
       const updated = Store.getTutorChat();
       updated.push({ role: 'assistant', content: plan });
       Store.setTutorChat(updated);
@@ -3332,7 +3332,7 @@ const App = {
     document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Generating questions with AI…</div>`;
     document.getElementById('exam-mode-banner').style.display = Quiz.examMode ? 'flex' : 'none';
     try {
-      const qs = await Groq.generateQuestions(this.selectedSubject, this.selectedDifficulty, this.selectedCount, this.currentClass);
+      const qs = await OpenAI.generateQuestions(this.selectedSubject, this.selectedDifficulty, this.selectedCount, this.currentClass);
       Quiz.questions = qs; Quiz.startTime = Date.now();
       document.getElementById('quiz-loading').style.display = 'none';
       document.getElementById('quiz-question-wrap').style.display = 'block';
@@ -3359,7 +3359,7 @@ const App = {
     document.getElementById('quiz-loading').innerHTML = `<div class="spinner"></div><div class="spinner-text">Generating quiz from your notes…</div>`;
     document.getElementById('exam-mode-banner').style.display = 'none';
     try {
-      const qs = await Groq.generateQuestionsFromNotes(notesText, difficulty, count, subjectLabel);
+      const qs = await OpenAI.generateQuestionsFromNotes(notesText, difficulty, count, subjectLabel);
       Quiz.questions = qs; Quiz.startTime = Date.now();
       document.getElementById('quiz-loading').style.display = 'none';
       document.getElementById('quiz-question-wrap').style.display = 'block';
@@ -3559,7 +3559,7 @@ const App = {
     const btn = document.getElementById('btn-save-note');
     const originalText = btn.textContent;
     btn.textContent = '⏳ Summarizing…'; btn.disabled = true;
-    Groq.summarizeNotes(text, subject).then(summary => {
+    OpenAI.summarizeNotes(text, subject).then(summary => {
       const notes = Store.getNotes();
       const entry = { id: 'note_' + Date.now(), subject, class: cls, rawText: text, summary, date: new Date().toLocaleDateString(), flashcards: [], keyTerms: [] };
       notes.push(entry); Store.setNotes(notes);
@@ -3631,7 +3631,7 @@ const App = {
       if (!question) { UI.toast('Type a question first', 'error'); return; }
       const answerBox = document.getElementById(`qa-answer-${id}`);
       answerBox.classList.add('show'); answerBox.textContent = '⏳ Thinking…';
-      Groq.askAboutNotes(note.rawText, question, note.subject).then(answer => {
+      OpenAI.askAboutNotes(note.rawText, question, note.subject).then(answer => {
         answerBox.textContent = answer;
       }).catch(err => { answerBox.textContent = '❌ ' + err.message; });
       return;
@@ -3639,7 +3639,7 @@ const App = {
     if (action === 'simplify') {
       const answerBox = document.getElementById(`simplify-answer-${id}`);
       answerBox.classList.add('show'); answerBox.textContent = '⏳ Simplifying…';
-      Groq.simplifyExplanation(note.rawText, note.subject).then(text => {
+      OpenAI.simplifyExplanation(note.rawText, note.subject).then(text => {
         answerBox.innerHTML = `<strong style="color:var(--cyan-blue);">✨ Simple version:</strong> ${UI.escapeHtml(text)}`;
       }).catch(err => { answerBox.textContent = '❌ ' + err.message; });
       return;
@@ -3652,7 +3652,7 @@ const App = {
         return;
       }
       box.classList.add('show'); box.innerHTML = `<div class="spinner-wrap" style="padding:20px;"><div class="spinner" style="width:28px;height:28px;"></div></div>`;
-      Groq.generateKeyTerms(note.rawText, note.subject).then(terms => {
+      OpenAI.generateKeyTerms(note.rawText, note.subject).then(terms => {
         const allNotes = Store.getNotes();
         const idx = allNotes.findIndex(n => n.id === id);
         if (idx >= 0) { allNotes[idx].keyTerms = terms; Store.setNotes(allNotes); }
@@ -3686,7 +3686,7 @@ const App = {
     const notes = Store.getNotes();
     const note = notes.find(n => n.id === noteId); if (!note) return;
     UI.toast('Generating flashcards…', 'info', 2000);
-    Groq.generateFlashcards(note.rawText, note.subject, count).then(cards => {
+    OpenAI.generateFlashcards(note.rawText, note.subject, count).then(cards => {
       const allNotes = Store.getNotes();
       const idx = allNotes.findIndex(n => n.id === noteId);
       if (idx >= 0) { allNotes[idx].flashcards = cards.map(c => SpacedRepetition.ensureSchedule({ ...c })); Store.setNotes(allNotes); }

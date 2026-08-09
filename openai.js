@@ -1,20 +1,21 @@
-// api/groq.js
-// Vercel Edge Function — proxies chat requests to Groq using server-side keys.
-// The keys never reach the browser; only this function sees them.
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'llama-3.3-70b-versatile';
-const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Default model – you can override with OPENAI_MODEL env var
+const DEFAULT_MODEL = 'gpt-3.5-turbo';
+const MODEL = process.env.OPENAI_MODEL || DEFAULT_MODEL;
+
+const BASE_URL = 'https://api.openai.com/v1/chat/completions';
 
 // Read keys from a single env var: comma-separated list, no spaces needed
-// (trimmed automatically). Set GROQ_KEYS in Vercel → Project → Settings → Environment Variables.
-const KEYS = (process.env.GROQ_KEYS || '')
+// (trimmed automatically). Set OPENAI_KEYS in Vercel → Project → Settings → Environment Variables.
+const KEYS = (process.env.OPENAI_KEYS || '')
   .split(',')
   .map((k) => k.trim())
   .filter(Boolean);
 
 function isKeyExhaustedStatus(status) {
+  // OpenAI uses these statuses to indicate key issues or rate limiting
   return status === 401 || status === 403 || status === 429 || status === 402;
 }
 
@@ -83,7 +84,7 @@ export default async function handler(req) {
       const content = data.choices?.[0]?.message?.content || '';
       return json({ content });
     } catch (err) {
-      lastMessage = err.message || 'Network error contacting Groq';
+      lastMessage = err.message || 'Network error contacting OpenAI';
     }
   }
 

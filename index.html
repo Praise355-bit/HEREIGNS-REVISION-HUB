@@ -2235,80 +2235,138 @@ const Voice = {
   }
 };
 
-const Groq = {
-  // Calls our own Vercel serverless function instead of api.groq.com directly.
-  // No key lives in the browser anymore.
-  proxyURL: '/api/groq',
+const OpenAI = {
+  // Calls our own Vercel serverless function that proxies to OpenAI.
+  // No API key lives in the browser.
+  proxyURL: '/api/openai',
 
-  async chat(prompt, { temperature = 0.6, max_tokens = 2048 } = {}) {
+  // Default model – can be overridden per call via options.
+  defaultModel: 'gpt-3.5-turbo', // or 'gpt-4'
+
+  /**
+   * Core chat method using OpenAI's Chat Completions.
+   * @param {string} prompt - The user's message.
+   * @param {object} options - { temperature, max_tokens, model, system }
+   * @returns {Promise<string>} The assistant's reply.
+   */
+  async chat(prompt, { temperature = 0.6, max_tokens = 2048, model, system } = {}) {
     try {
+      const messages = [];
+      // Optional system message – if not provided, use a default helpful one.
+      if (system) {
+        messages.push({ role: 'system', content: system });
+      } else {
+        messages.push({ role: 'system', content: 'You are a helpful and expert assistant.' });
+      }
+      messages.push({ role: 'user', content: prompt });
+
       const resp = await fetch(this.proxyURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, temperature, max_tokens })
+        body: JSON.stringify({
+          model: model || this.defaultModel,
+          messages,
+          temperature,
+          max_tokens,
+        }),
       });
+
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        throw new Error(data.error || `API error ${resp.status}`);
+        throw new Error(data.error?.message || data.error || `API error ${resp.status}`);
       }
-      return data.content || '';
+
+      // OpenAI response structure: data.choices[0].message.content
+      const content = data.choices?.[0]?.message?.content;
+      if (typeof content !== 'string') {
+        throw new Error('Invalid response from OpenAI – missing content');
+      }
+      return content;
     } catch (err) {
-      if (err.name === 'TypeError') { throw new Error('Network error — please check your internet connection.'); }
+      if (err.name === 'TypeError') {
+        throw new Error('Network error — please check your internet connection.');
+      }
       throw err;
     }
   },
 
+  /**
+   * Helper to clean and parse a JSON array from the AI response.
+   * Strips markdown fences and tries to isolate the array.
+   */
   parseJsonArray(raw) {
     let clean = raw.replace(/```json|```/gi, '').trim();
-    // Some models wrap output with stray preamble text; try to isolate the array
     const start = clean.indexOf('[');
     const end = clean.lastIndexOf(']');
-    if (start !== -1 && end !== -1 && end > start) { clean = clean.slice(start, end + 1); }
+    if (start !== -1 && end !== -1 && end > start) {
+      clean = clean.slice(start, end + 1);
+    }
     const parsed = JSON.parse(clean);
-    if (!Array.isArray(parsed) || parsed.length === 0) { throw new Error('Invalid response from AI'); }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('Invalid response from AI – expected non‑empty array');
+    }
     return parsed;
   },
+
+  // ---------- Study helper methods (unchanged except for using the new chat) ----------
+
   async generateQuestions(subject, difficulty, count, studentClass) {
     const prompt = `You are an expert and professional Nigerian secondary school teacher. Generate exactly ${count} high-quality multiple-choice questions for:\n- Subject: ${subject}\n- Class: ${studentClass}\n- Difficulty: ${difficulty}\n- Curriculum: Nigerian educational curriculum (WAEC/NECO standard)\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": {\n      "A": "First option",\n      "B": "Second option",\n      "C": "Third option",\n      "D": "Fourth option"\n    },\n    "answer": "A",\n    "explanation": "Detailed explanation of why A is correct and why others are wrong."\n  }\n]\n\nRules:\n- Questions must be appropriate for ${studentClass} students\n- ${difficulty === 'Easy' ? 'Keep questions foundational and straightforward' : difficulty === 'Medium' ? 'Include moderate application and understanding questions' : 'Include complex analysis, evaluation and higher-order thinking questions'}\n- All 4 options must be plausible\n- Explanations must be clear and educational\n- Generate exactly ${count} questions`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 4096 });
     return this.parseJsonArray(raw);
   },
+
   async generateQuestionsFromNotes(notesText, difficulty, count, subjectLabel) {
     const prompt = `You are an expert and professional teacher. Below are a student's class notes${subjectLabel ? ` on ${subjectLabel}` : ''}. Based ONLY on the content of these notes, generate exactly ${count} multiple-choice questions at ${difficulty} difficulty that test understanding of the material.\n\n--- NOTES START ---\n${notesText.slice(0, 9000)}\n--- NOTES END ---\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": { "A": "...", "B": "...", "C": "...", "D": "..." },\n    "answer": "A",\n    "explanation": "Explanation referencing the notes."\n  }\n]\n\nRules:\n- Base every question strictly on the notes content provided\n- All 4 options must be plausible\n- Generate exactly ${count} questions`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 4096 });
     return this.parseJsonArray(raw);
   },
+
   async summarizeNotes(notesText, subjectLabel) {
     const prompt = `You are a helpful and smart study assistant. Summarize the following class notes${subjectLabel ? ` on ${subjectLabel}` : ''} into a concise, well-organized summary for revision purposes. Use short bullet points (start each with "• "), group related ideas, and bold key terms is not needed — just keep it plain text. Keep the summary clear and exam-focused.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\nReturn ONLY the summary text, no preamble, no markdown headers.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.4, max_tokens: 1024 });
     return raw.trim();
   },
+
   async askAboutNotes(notesText, question, subjectLabel) {
     const prompt = `You are a helpful and smart study assistant helping a student revise${subjectLabel ? ` ${subjectLabel}` : ''}. Answer the student's question using ONLY the information in the notes below. If the answer isn't in the notes, say so honestly and give your best general explanation, clearly noting it's not from their notes.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\n--- STUDENT QUESTION ---\n${question}\n\nGive a clear, concise, exam-helpful answer.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 800 });
     return raw.trim();
   },
+
   async generateFlashcards(notesText, subjectLabel, count) {
     const prompt = `You are a helpful and smart study assistant. Create exactly ${count} flashcards from the class notes below${subjectLabel ? ` on ${subjectLabel}` : ''}. Each flashcard should have a short "front" (a question, term, or prompt) and a concise "back" (the answer or definition), based strictly on the notes.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  { "front": "Short question or term", "back": "Concise answer or definition" }\n]\n\nGenerate exactly ${count} flashcards.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 2048 });
     return this.parseJsonArray(raw);
   },
+
   async generateKeyTerms(notesText, subjectLabel) {
     const prompt = `You are a helpful and smart study assistant. Extract the most important key terms and concepts from the class notes below${subjectLabel ? ` on ${subjectLabel}` : ''}, and give a short, clear definition for each (1-2 sentences), suitable for exam revision.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  { "term": "Key term", "definition": "Short clear definition" }\n]\n\nExtract between 5 and 12 key terms depending on how much content is available.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.4, max_tokens: 1500 });
     return this.parseJsonArray(raw);
   },
+
   async simplifyExplanation(text, subjectLabel) {
     const prompt = `Explain the following${subjectLabel ? ` ${subjectLabel}` : ''} content in the simplest possible terms, as if to a much younger student. Use short sentences and a relatable everyday example if helpful. Keep it under 120 words.\n\n--- CONTENT ---\n${text.slice(0, 4000)}\n\nReturn ONLY the simplified explanation text, no preamble.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 400 });
     return raw.trim();
   },
+
   async tutorReply(history, subjectLabel, studentClass) {
     const convo = history.map(m => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`).join('\n');
     const prompt = `You are a warm, patient, expert Nigerian secondary school tutor helping a ${studentClass || ''} student prepare for WAEC/NECO exams${subjectLabel ? ` in ${subjectLabel}` : ''}. Continue the conversation below naturally. Keep answers clear, encouraging, exam-focused, and not overly long (use short paragraphs or bullet points where helpful). If the student asks for practice questions, include the correct answer and a brief explanation.\n\n--- CONVERSATION SO FAR ---\n${convo}\n\nRespond ONLY as the Tutor's next message, no preamble, no "Tutor:" prefix.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.65, max_tokens: 900 });
     return raw.trim();
   },
+
   async generateStudyPlan(stats, days, hoursPerDay, studentClass, subjectNames) {
     const weakSubjects = Object.entries(stats.subjectMap || {})
       .map(([name, d]) => ({ name, pct: d.total > 0 ? Math.round(d.correct / d.total * 100) : 0 }))
@@ -2318,9 +2376,10 @@ const Groq = {
       : 'No quiz history yet — treat all subjects as equal priority.';
     const subjectPool = subjectNames && subjectNames.length ? subjectNames.join(', ') : 'core WAEC/NECO subjects';
     const prompt = `You are an expert study coach for a Nigerian ${studentClass || 'secondary school'} student preparing for WAEC/NECO exams. Build a personalised ${days}-day revision timetable, ${hoursPerDay} hour(s) of study per day.\n\nStudent's performance so far (weakest to strongest): ${weakList}\nSubjects available: ${subjectPool}\n\nPrioritise the weakest subjects with more time, but include some review of stronger subjects too. For each day, list the date as "Day N", the subject(s) to cover, and 1-2 concrete focus topics or activities (e.g. "practice past questions", "review key terms", "take a quiz"). Keep it realistic and motivating. Format as plain text with clear "Day N:" headings, no markdown symbols like # or **.`.trim();
+
     const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 1800 });
     return raw.trim();
-  }
+  },
 };
 const Confetti = {
   canvas: null, ctx: null, particles: [], running: false,
@@ -3291,7 +3350,7 @@ const App = {
       }
     } catch (err) {
       document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate questions</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('subjects')">← Go Back</button></div>`;
-      console.error('Groq error:', err);
+      console.error('AI error:', err);
     }
   },
   async startNotesQuizSession(notesText, subjectLabel, difficulty, count) {
@@ -3308,7 +3367,7 @@ const App = {
       Quiz.renderQuestion();
     } catch (err) {
       document.getElementById('quiz-loading').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">❌</div><div style="font-weight:600;margin-bottom:8px">Failed to generate quiz from notes</div><div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px">${err.message}</div><button class="btn-primary" style="max-width:200px" onclick="UI.navigate('notes')">← Go Back</button></div>`;
-      console.error('Groq error:', err);
+      console.error('AI error:', err);
     }
   },
   renderResults(pct, correct, wrong, elapsed, xpEarned) {

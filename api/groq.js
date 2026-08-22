@@ -4,7 +4,7 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'Qwen3.6-27B-chat'; // or 'Qwen3.6-27B-chat-multilingual'
+const MODEL = 'qwen/qwen3.6-27b'; // Groq's actual model ID (was invalid before)
 const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Read keys from a single env var: comma-separated list, no spaces needed
@@ -21,11 +21,27 @@ function isKeyExhaustedStatus(status) {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
   });
 }
 
 export default async function handler(req) {
+  // Browsers send a CORS preflight before the actual POST — without this,
+  // any cross-origin frontend call to this function fails before it starts.
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405);
   }

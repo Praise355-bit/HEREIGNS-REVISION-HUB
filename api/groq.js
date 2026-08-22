@@ -4,7 +4,7 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'Qwen3.6-27B-chat'; // or 'Qwen3.6-27B-chat-multilingual'
 const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Read keys from a single env var: comma-separated list, no spaces needed

@@ -102,7 +102,6 @@ body {
   font-weight: 400;
   font-size: 15px;
   text-rendering: optimizeLegibility;
-  text-transform: capitalize;
   background-image:
     radial-gradient(ellipse at 20% 20%, rgba(30,58,138,0.08) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 60%, rgba(37,99,235,0.06) 0%, transparent 60%),
@@ -1565,7 +1564,7 @@ body {
       <section class="page" id="page-notes">
         <div class="page-header">
           <h2>My Notes</h2>
-          <p>Add your class notes — AI will summarize them, generate flashcards, answer your questions, or quiz you on them</p>
+          <p>Add your class notes — AI will summarize them, generate flashcards, predict exam questions, or quiz you on them</p>
         </div>
 
         <div class="notes-add-card">
@@ -2127,18 +2126,41 @@ const Groq = {
     const start = clean.indexOf('[');
     const end = clean.lastIndexOf(']');
     if (start !== -1 && end !== -1 && end > start) { clean = clean.slice(start, end + 1); }
-    const parsed = JSON.parse(clean);
-    if (!Array.isArray(parsed) || parsed.length === 0) { throw new Error('Invalid response from AI'); }
-    return parsed;
+    // Models sometimes leave a trailing comma or a lazy "..." placeholder
+    // before the closing bracket when they truncate a response — strip those
+    // before attempting to parse.
+    clean = clean.replace(/,\s*\.\.\.\s*\]/g, ']').replace(/,\s*\]/g, ']').replace(/,\s*\}/g, '}');
+    try {
+      const parsed = JSON.parse(clean);
+      if (!Array.isArray(parsed) || parsed.length === 0) { throw new Error('Invalid response from AI'); }
+      return parsed;
+    } catch (err) {
+      // Parsing the whole array failed (often a truncated or malformed last
+      // element) — salvage whatever complete objects we can instead of
+      // discarding the entire batch of questions/cards.
+      const objectMatches = clean.match(/\{[^{}]*\}/g);
+      const salvaged = [];
+      if (objectMatches) {
+        for (const m of objectMatches) {
+          try { salvaged.push(JSON.parse(m)); } catch { /* skip the broken fragment */ }
+        }
+      }
+      if (salvaged.length > 0) return salvaged;
+      throw new Error('The AI returned a malformed response — please try again.');
+    }
   },
   async generateQuestions(subject, difficulty, count, studentClass) {
     const prompt = `You are an expert and professional Nigerian secondary school teacher. Generate exactly ${count} high-quality multiple-choice questions for:\n- Subject: ${subject}\n- Class: ${studentClass}\n- Difficulty: ${difficulty}\n- Curriculum: Nigerian educational curriculum (WAEC/NECO standard)\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": {\n      "A": "First option",\n      "B": "Second option",\n      "C": "Third option",\n      "D": "Fourth option"\n    },\n    "answer": "A",\n    "explanation": "Detailed explanation of why A is correct and why others are wrong."\n  }\n]\n\nRules:\n- Questions must be appropriate for ${studentClass} students\n- ${difficulty === 'Easy' ? 'Keep questions foundational and straightforward' : difficulty === 'Medium' ? 'Include moderate application and understanding questions' : 'Include complex analysis, evaluation and higher-order thinking questions'}\n- All 4 options must be plausible\n- Explanations must be clear and educational\n- Generate exactly ${count} questions`.trim();
-    const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: 4096 });
+    // Scale the token budget to the number of questions requested, so larger
+    // batches (20-30 questions) don't get cut off mid-JSON.
+    const tokenBudget = Math.min(16384, 300 * count + 600);
+    const raw = await this.chat(prompt, { temperature: 0.7, max_tokens: tokenBudget });
     return this.parseJsonArray(raw);
   },
   async generateQuestionsFromNotes(notesText, difficulty, count, subjectLabel) {
     const prompt = `You are an expert and professional teacher. Below are a student's class notes${subjectLabel ? ` on ${subjectLabel}` : ''}. Based ONLY on the content of these notes, generate exactly ${count} multiple-choice questions at ${difficulty} difficulty that test understanding of the material.\n\n--- NOTES START ---\n${notesText.slice(0, 9000)}\n--- NOTES END ---\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  {\n    "question": "The question text here?",\n    "options": { "A": "...", "B": "...", "C": "...", "D": "..." },\n    "answer": "A",\n    "explanation": "Explanation referencing the notes."\n  }\n]\n\nRules:\n- Base every question strictly on the notes content provided\n- All 4 options must be plausible\n- Generate exactly ${count} questions`.trim();
-    const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 4096 });
+    const tokenBudget = Math.min(16384, 300 * count + 600);
+    const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: tokenBudget });
     return this.parseJsonArray(raw);
   },
   async summarizeNotes(notesText, subjectLabel) {
@@ -2146,14 +2168,15 @@ const Groq = {
     const raw = await this.chat(prompt, { temperature: 0.4, max_tokens: 1024 });
     return raw.trim();
   },
-  async askAboutNotes(notesText, question, subjectLabel) {
-    const prompt = `You are a helpful and smart study assistant helping a student revise${subjectLabel ? ` ${subjectLabel}` : ''}. Answer the student's question using ONLY the information in the notes below. If the answer isn't in the notes, say so honestly and give your best general explanation, clearly noting it's not from their notes.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\n--- STUDENT QUESTION ---\n${question}\n\nGive a clear, concise, exam-helpful answer.`.trim();
-    const raw = await this.chat(prompt, { temperature: 0.5, max_tokens: 800 });
+  async predictExamQuestions(notesText, subjectLabel) {
+    const prompt = `You are an expert and professional Nigerian secondary school teacher preparing students for WAEC/NECO-style exams. Based ONLY on the class notes below${subjectLabel ? ` on ${subjectLabel}` : ''}, predict 4 likely exam-style short-answer or essay questions a student could be asked, and give a concise model answer for each (2-4 sentences).\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\nReturn the result as plain text, formatted like:\nQ1: <question>\nA1: <model answer>\n\nQ2: <question>\nA2: <model answer>\n\n(and so on for all 4). No markdown, no preamble.`.trim();
+    const raw = await this.chat(prompt, { temperature: 0.55, max_tokens: 900 });
     return raw.trim();
   },
   async generateFlashcards(notesText, subjectLabel, count) {
     const prompt = `You are a helpful and smart study assistant. Create exactly ${count} flashcards from the class notes below${subjectLabel ? ` on ${subjectLabel}` : ''}. Each flashcard should have a short "front" (a question, term, or prompt) and a concise "back" (the answer or definition), based strictly on the notes.\n\n--- NOTES ---\n${notesText.slice(0, 9000)}\n\nReturn ONLY a valid JSON array (no markdown, no preamble) with this exact structure:\n[\n  { "front": "Short question or term", "back": "Concise answer or definition" }\n]\n\nGenerate exactly ${count} flashcards.`.trim();
-    const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: 2048 });
+    const tokenBudget = Math.min(16384, 200 * count + 500);
+    const raw = await this.chat(prompt, { temperature: 0.6, max_tokens: tokenBudget });
     return this.parseJsonArray(raw);
   },
   async generateKeyTerms(notesText, subjectLabel) {
@@ -2280,12 +2303,11 @@ const UI = {
     if (target) target.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
     document.querySelectorAll('.mobile-nav-item').forEach(n => { n.classList.toggle('active', n.dataset.page === pageId); });
-    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', quiz:'Quiz', results:'Results', analytics:'Analytics', leaderboard:'Leaderboard', achievements:'Achievements', settings:'Settings' };
+    const titles = { dashboard:'Dashboard', subjects:'Start Quiz', notes:'Notes', quiz:'Quiz', results:'Results', analytics:'Analytics', achievements:'Achievements', settings:'Settings' };
     document.getElementById('topbar-title').textContent = titles[pageId] || 'Revision Hub AI';
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('show');
     if (pageId === 'dashboard')    App.renderDashboard();
-    if (pageId === 'leaderboard')  App.renderLeaderboard('All');
     if (pageId === 'analytics')    App.renderAnalytics();
     if (pageId === 'achievements') App.renderAchievements();
     if (pageId === 'subjects')     App.renderSubjects();
@@ -2385,6 +2407,9 @@ const Quiz = {
       const readText = `Question ${this.current+1}. ${q.question}. Option A: ${q.options.A}. Option B: ${q.options.B}. Option C: ${q.options.C}. Option D: ${q.options.D}.`;
       Voice.speak(readText);
     }
+    // Timer is irrelevant during bookmark-review sessions — hide it instead of showing a stale value.
+    const timerEl = document.getElementById('quiz-timer');
+    if (timerEl) timerEl.style.display = this.reviewMode ? 'none' : 'flex';
     if (prevAns === undefined && !this.reviewMode) this.startTimer();
     else clearInterval(this.timerInterval);
   },
@@ -2458,12 +2483,6 @@ const Quiz = {
     if (stats.history.length > 50) stats.history = stats.history.slice(-50);
     if (!stats.studiedSubjects.includes(this.subject)) { stats.studiedSubjects.push(this.subject); }
     Store.setStats(stats);
-    const profile = Store.getProfile(); const lb = Store.getLeaderboard();
-    const existingIdx = lb.findIndex(e => e.name === profile.name && e.class === profile.class);
-    const entry = { name: profile.name, class: profile.class, arm: profile.arm, score: pct, accuracy: Math.round((stats.correct / stats.totalQ) * 100), xp: stats.xp };
-    if (existingIdx >= 0) { if (pct > lb[existingIdx].score) lb[existingIdx] = entry; else { lb[existingIdx].xp = stats.xp; lb[existingIdx].accuracy = entry.accuracy; } }
-    else { lb.push(entry); }
-    Store.setLeaderboard(lb);
     App.checkAchievements(stats, pct, elapsed);
     App.renderResults(pct, correct, wrong, elapsed, xpEarned);
     UI.navigate('results');
@@ -2648,6 +2667,15 @@ const App = {
     document.getElementById('notes-filter-subject').addEventListener('change', () => this.renderNotes());
     document.getElementById('btn-import-pdf').addEventListener('click', () => document.getElementById('note-pdf-input').click());
     document.getElementById('note-pdf-input').addEventListener('change', (e) => this.handlePdfImport(e));
+
+    // Quiz-config difficulty/question-count pills (scoped to #quiz-config, attached once —
+    // previously these were re-selected/re-bound on every class-tab switch using a global
+    // [data-diff]/[data-count] selector, which also matched the note-quiz modal's pills and
+    // caused their "active" states to interfere with each other and listeners to pile up).
+    const quizDiffPills = document.querySelectorAll('#quiz-config [data-diff]');
+    const quizCountPills = document.querySelectorAll('#quiz-config [data-count]');
+    quizDiffPills.forEach(p => { p.addEventListener('click', () => { quizDiffPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedDifficulty = p.dataset.diff; }); });
+    quizCountPills.forEach(p => { p.addEventListener('click', () => { quizCountPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedCount = parseInt(p.dataset.count); }); });
   },
   startApp() {
     document.getElementById('page-register').style.display = 'none';
@@ -2760,9 +2788,6 @@ const App = {
         document.getElementById('quiz-config').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     });
-    const diffPills = document.querySelectorAll('[data-diff]'); const countPills = document.querySelectorAll('[data-count]');
-    diffPills.forEach(p => { p.addEventListener('click', () => { diffPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedDifficulty = p.dataset.diff; }); });
-    countPills.forEach(p => { p.addEventListener('click', () => { countPills.forEach(x => x.classList.remove('active')); p.classList.add('active'); this.selectedCount = parseInt(p.dataset.count); }); });
     document.getElementById('btn-start-quiz').onclick = () => {
       if (!this.selectedSubject) { UI.toast('Please select a subject', 'error'); return; }
       this.startQuizSession();
@@ -2829,7 +2854,8 @@ const App = {
     else if (pct >= 80) { emoji = '🎉'; label = 'Excellent work! Keep it up!'; }
     else if (pct >= 60) { emoji = '👍'; label = 'Good job! Room to improve!'; }
     else if (pct >= 40) { emoji = '📚'; label = 'Keep studying — you\'ll get there!'; }
-    else if (pct >=20){ emoji = '💪'; label = 'Don\'t give up — review and retry!'; }
+    else if (pct >= 20) { emoji = '💪'; label = 'Don\'t give up — review and retry!'; }
+    else { emoji = '🌱'; label = 'Every attempt is progress — try again!'; }
     document.getElementById('result-emoji').textContent = emoji;
     document.getElementById('result-label').textContent  = label;
     const incorrectSection = document.getElementById('incorrect-section');
@@ -2975,7 +3001,7 @@ const App = {
         <div class="note-summary-text" data-role="summary-display">${this.formatNoteSummary(n.summary || n.rawText)}</div>
         <textarea class="form-textarea" data-role="summary-edit" style="display:none;min-height:100px;">${UI.escapeHtml(n.summary || n.rawText)}</textarea>
         <div class="note-card-actions">
-          <button class="btn-secondary" data-action="ask">❓ Ask a Question</button>
+          <button class="btn-secondary" data-action="predict">🎯 Predicted Questions</button>
           <button class="btn-secondary" data-action="simplify">✨ Explain Simpler</button>
           <button class="btn-secondary" data-action="keyterms">🔑 Key Terms</button>
           <button class="btn-secondary" data-action="flashcards">${n.flashcards && n.flashcards.length ? '🗂️ Study Flashcards' : '🗂️ Generate Flashcards'}</button>
@@ -2983,13 +3009,7 @@ const App = {
           <button class="btn-secondary" data-action="edit">✏️ Edit</button>
           <button class="btn-danger" data-action="delete" style="padding:8px 14px;font-size:12.5px;">🗑️ Delete</button>
         </div>
-        <div class="note-qa-box" id="qa-box-${n.id}">
-          <div class="note-qa-input-row">
-            <input class="form-input" id="qa-input-${n.id}" type="text" placeholder="Ask something about this note…" />
-            <button class="btn-primary" style="width:auto;" data-action="ask-submit">Ask</button>
-          </div>
-          <div class="note-qa-answer" id="qa-answer-${n.id}"></div>
-        </div>
+        <div class="note-qa-answer" id="predict-answer-${n.id}"></div>
         <div class="note-qa-answer" id="simplify-answer-${n.id}"></div>
         <div class="note-keyterms-box" id="keyterms-box-${n.id}"></div>
       </div>`).join('');
@@ -3074,23 +3094,14 @@ const App = {
       if (confirm('Delete this note?')) { Store.setNotes(notes.filter(n => n.id !== id)); this.renderNotes(); UI.toast('Note deleted', 'info'); }
       return;
     }
-    if (action === 'ask') {
-      const box = document.getElementById(`qa-box-${id}`);
-      box.classList.toggle('show');
-      if (box.classList.contains('show')) { const input = document.getElementById(`qa-input-${id}`); if (input) setTimeout(() => input.focus(), 50); }
-      return;
-    }
-    if (action === 'ask-submit') {
-      const input = document.getElementById(`qa-input-${id}`);
-      const question = input.value.trim();
-      if (!question) { UI.toast('Type a question first', 'error'); input.focus(); return; }
-      const submitBtn = e.target; const originalLabel = submitBtn.textContent;
-      submitBtn.disabled = true; submitBtn.textContent = '⏳';
-      const answerBox = document.getElementById(`qa-answer-${id}`);
-      answerBox.classList.add('show'); answerBox.textContent = '⏳ Thinking…';
-      Groq.askAboutNotes(note.rawText, question, note.subject).then(answer => {
-        answerBox.textContent = answer;
-      }).catch(err => { answerBox.textContent = '❌ ' + err.message; }).finally(() => { submitBtn.disabled = false; submitBtn.textContent = originalLabel; });
+    if (action === 'predict') {
+      const btn = e.target; const originalLabel = btn.textContent;
+      btn.disabled = true; btn.textContent = '⏳ Predicting…';
+      const answerBox = document.getElementById(`predict-answer-${id}`);
+      answerBox.classList.add('show'); answerBox.textContent = '⏳ Thinking of likely exam questions…';
+      Groq.predictExamQuestions(note.rawText, note.subject).then(text => {
+        answerBox.innerHTML = `<strong style="color:var(--cyan-blue);">🎯 Predicted Exam Questions:</strong><br>${UI.escapeHtml(text).replace(/\n/g, '<br>')}`;
+      }).catch(err => { answerBox.textContent = '❌ ' + err.message; }).finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
       return;
     }
     if (action === 'simplify') {

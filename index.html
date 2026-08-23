@@ -2119,8 +2119,7 @@ const Groq = {
       throw err;
     }
   },
-
-  extractTopLevelObjects(text) {
+    extractTopLevelObjects(text) {
     // Balanced-brace, string-aware scan for complete top-level {...} objects.
     // Unlike a naive regex, this correctly skips over nested objects
     // (e.g. the "options": {...} inside each question) instead of stopping

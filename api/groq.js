@@ -4,7 +4,7 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'qwen/qwen3.6-27b'; // Groq's actual model ID (was invalid before)
+const MODEL = 'llama-3.3-70b-versatile'; // Groq's actual model ID (was invalid before)
 const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Read keys from a single env var: comma-separated list, no spaces needed

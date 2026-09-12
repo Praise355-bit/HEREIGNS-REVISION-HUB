@@ -4,44 +4,50 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'llama-3.1-8b-instant'; // Groq's actual model ID (was invalid before)
+const MODEL = 'llama-3.1-8b-instant';
 const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Read keys from a single env var: comma-separated list, no spaces needed
-// (trimmed automatically). Set GROQ_KEYS in Vercel → Project → Settings → Environment Variables.
+// ── Limits, raised ────────────────────────────────────────────────────────────
+const REQUEST_TIMEOUT_MS = 120_000;     // was 30s  — 2 min per attempt
+const MAX_PROMPT_CHARS   = 500_000;     // was 32k  — ~125k tokens worth of chars
+const MAX_TOKENS_CAP     = 8192;        // Groq's hard output ceiling for this model
+const DEFAULT_MAX_TOKENS = 8192;        // was 2048 — start at the ceiling
+const DEFAULT_TEMPERATURE = 0.7;        // was 0.6
+const MAX_TEMPERATURE    = 2;           // Groq's hard ceiling
+
+// Comma-separated list; whitespace is trimmed. Set GROQ_KEYS in Vercel env vars.
 const KEYS = (process.env.GROQ_KEYS || '')
   .split(',')
   .map((k) => k.trim())
   .filter(Boolean);
 
-function isKeyExhaustedStatus(status) {
-  return status === 401 || status === 403 || status === 429 || status === 402;
-}
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
 }
 
-export default async function handler(req) {
-  // Browsers send a CORS preflight before the actual POST — without this,
-  // any cross-origin frontend call to this function fails before it starts.
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
+// Bad/limited key → rotate to the next one.
+function isKeyExhaustedStatus(status) {
+  return status === 401 || status === 403 || status === 402 || status === 429;
+}
 
+// Transient upstream failure → rotate (could be a Groq-side hiccup on this key).
+function isRetryableStatus(status) {
+  return status >= 500 && status <= 599;
+}
+
+export default async function handler(req) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405);
   }
@@ -56,19 +62,39 @@ export default async function handler(req) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { prompt, temperature = 0.6, max_tokens = 2048 } = body || {};
+  const {
+    prompt,
+    temperature = DEFAULT_TEMPERATURE,
+    max_tokens  = DEFAULT_MAX_TOKENS,
+  } = body || {};
+
   if (!prompt || typeof prompt !== 'string') {
     return json({ error: 'Missing prompt' }, 400);
   }
-  // Basic sanity caps so one request can't rack up runaway usage
-  const safeTemp = Math.min(Math.max(Number(temperature) || 0.6, 0), 2);
-  const safeMaxTokens = Math.min(Math.max(parseInt(max_tokens, 10) || 2048, 1), 8192);
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    return json({ error: `Prompt too long (max ${MAX_PROMPT_CHARS} chars)` }, 413);
+  }
+
+  const safeTemp = Math.min(
+    Math.max(Number(temperature) || DEFAULT_TEMPERATURE, 0),
+    MAX_TEMPERATURE
+  );
+
+  const parsedMax = parseInt(max_tokens, 10);
+  const safeMaxTokens = Math.min(
+    Math.max(Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : DEFAULT_MAX_TOKENS, 1),
+    MAX_TOKENS_CAP
+  );
 
   let lastMessage = 'All AI keys are currently unavailable. Please try again later.';
 
   for (const key of KEYS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let resp;
     try {
-      const resp = await fetch(BASE_URL, {
+      resp = await fetch(BASE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,27 +106,46 @@ export default async function handler(req) {
           temperature: safeTemp,
           max_tokens: safeMaxTokens,
         }),
+        signal: controller.signal,
       });
-
-      if (!resp.ok) {
-        if (isKeyExhaustedStatus(resp.status)) {
-          // This key is done (rate-limited / out of credits / invalid) — try the next one
-          lastMessage = `Upstream key exhausted (HTTP ${resp.status})`;
-          continue;
-        }
-        const errData = await resp.json().catch(() => ({}));
-        return json(
-          { error: errData.error?.message || `API error ${resp.status}` },
-          resp.status
-        );
-      }
-
-      const data = await resp.json();
-      const content = data.choices?.[0]?.message?.content || '';
-      return json({ content });
     } catch (err) {
-      lastMessage = err.message || 'Network error contacting Groq';
+      clearTimeout(timer);
+      lastMessage =
+        err.name === 'AbortError'
+          ? `Upstream request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`
+          : err.message || 'Network error contacting Groq';
+      continue;
     }
+    clearTimeout(timer);
+
+    if (!resp.ok) {
+      if (isKeyExhaustedStatus(resp.status) || isRetryableStatus(resp.status)) {
+        lastMessage = `Upstream error (HTTP ${resp.status})`;
+        await resp.text().catch(() => {});
+        continue;
+      }
+      const errData = await resp.json().catch(() => ({}));
+      return json(
+        { error: errData.error?.message || `API error ${resp.status}` },
+        resp.status
+      );
+    }
+
+    let data;
+    try {
+      data = await resp.json();
+    } catch {
+      lastMessage = 'Malformed response from upstream';
+      continue;
+    }
+
+    const content = data?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.length === 0) {
+      lastMessage = 'Empty response from upstream';
+      continue;
+    }
+
+    return json({ content });
   }
 
   return json({ error: lastMessage }, 503);

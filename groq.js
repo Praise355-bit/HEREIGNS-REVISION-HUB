@@ -1,14 +1,13 @@
 // api/groq.js
 // Vercel Edge Function — proxies chat requests to Groq using server-side keys.
-// The keys never reach the browser; only this function sees them.
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'llama-3.3-70b-versatile';
+// ✅ UPDATED: llama-3.3-70b-versatile was retired on 16 Aug 2026.
+// Replacement recommended by Groq: openai/gpt-oss-120b
+const MODEL = 'openai/gpt-oss-120b';
 const BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Read keys from a single env var: comma-separated list, no spaces needed
-// (trimmed automatically). Set GROQ_KEYS in Vercel → Project → Settings → Environment Variables.
 const KEYS = (process.env.GROQ_KEYS || '')
   .split(',')
   .map((k) => k.trim())
@@ -44,9 +43,9 @@ export default async function handler(req) {
   if (!prompt || typeof prompt !== 'string') {
     return json({ error: 'Missing prompt' }, 400);
   }
-  // Basic sanity caps so one request can't rack up runaway usage
+
   const safeTemp = Math.min(Math.max(Number(temperature) || 0.6, 0), 2);
-  const safeMaxTokens = Math.min(Math.max(parseInt(max_tokens, 10) || 2048, 1), 8192);
+  const safeMaxTokens = Math.min(Math.max(parseInt(max_tokens, 10) || 2048, 1), 65536);
 
   let lastMessage = 'All AI keys are currently unavailable. Please try again later.';
 
@@ -68,7 +67,6 @@ export default async function handler(req) {
 
       if (!resp.ok) {
         if (isKeyExhaustedStatus(resp.status)) {
-          // This key is done (rate-limited / out of credits / invalid) — try the next one
           lastMessage = `Upstream key exhausted (HTTP ${resp.status})`;
           continue;
         }

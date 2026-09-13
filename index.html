@@ -561,11 +561,22 @@ body {
 .goal-card-head span { font-size: 12.5px; color: var(--text-secondary); }
 .goal-bar-track { height: 14px; background: rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); }
 .goal-bar-fill { height: 100%; background: var(--grad-progress); border-radius: 20px; transition: width 0.6s cubic-bezier(.4,0,.2,1); box-shadow: 0 0 14px rgba(37,99,235,0.5); }
+
+/* ---- VOICE HUD (live transcript / status) ---- */
+.voice-hud { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px); z-index: 500;
+  background: rgba(13,13,31,0.92); border: 1.5px solid rgba(14,165,233,0.45); border-radius: 999px; padding: 10px 20px;
+  display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-primary); max-width: 92vw;
+  box-shadow: 0 8px 30px rgba(14,165,233,0.25); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; }
+.voice-hud.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.voice-hud .vh-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan-blue); flex-shrink: 0; animation: speakPulse 1s infinite; }
+.voice-hud .vh-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
+@media (max-width: 768px) { .voice-hud { bottom: 78px; } }
 </style>
 </head>
 <body>
 
 <canvas id="confetti-canvas"></canvas>
+<div class="voice-hud" id="voice-hud"><span class="vh-dot"></span><span class="vh-text" id="voice-hud-text">Listening…</span></div>
 
 <div id="page-register" style="display:none;">
   <div class="register-card">
@@ -634,10 +645,11 @@ body {
     <h2>🎙️ Voice Assistant</h2>
     <div class="modal-sub">The mic listens automatically — no button-press needed. Just talk:</div>
     <div class="keyterm-list">
-      <div class="keyterm-item"><span class="keyterm-term">"A" · "B" · "C" · "D"</span><span class="keyterm-def">Just say the letter to answer the question on screen</span></div>
+      <div class="keyterm-item"><span class="keyterm-term">"A" · "B" · "C" · "D"</span><span class="keyterm-def">Just say the letter to answer the question on screen — or say the full answer text</span></div>
       <div class="keyterm-item"><span class="keyterm-term">"Open notes" · "Dashboard" · "Study buddy" · "Analytics"</span><span class="keyterm-def">Navigate the app</span></div>
       <div class="keyterm-item"><span class="keyterm-term">"Quiz me on Mathematics, hard, 20 questions"</span><span class="keyterm-def">Start an AI quiz — subject required, difficulty and count optional</span></div>
-      <div class="keyterm-item"><span class="keyterm-term">"Pause" · "Resume" · "Next" · "Read the question" · "Bookmark this"</span><span class="keyterm-def">Control the quiz in progress</span></div>
+      <div class="keyterm-item"><span class="keyterm-term">"Pause" · "Resume" · "Next" · "Previous" · "Read the question" · "Bookmark this"</span><span class="keyterm-def">Control the quiz in progress</span></div>
+      <div class="keyterm-item"><span class="keyterm-term">"Hint" · "Explain that" · "How much time is left"</span><span class="keyterm-def">Get help without breaking your flow</span></div>
       <div class="keyterm-item"><span class="keyterm-term">"Dark mode" · "Light mode"</span><span class="keyterm-def">Switch the theme</span></div>
       <div class="keyterm-item"><span class="keyterm-term">"Mute"</span><span class="keyterm-def">Turn the mic off — tap the mic icon or the Settings toggle to turn it back on</span></div>
     </div>
@@ -779,6 +791,7 @@ body {
       <section class="page" id="page-subjects">
         <div class="page-header"><h2>Choose a Subject</h2><p>Select your subject and configure your quiz session</p></div>
         <div class="subject-class-tabs" id="class-tabs"></div>
+        <input class="form-input" id="subject-search-input" type="text" placeholder="🔍 Search subjects…" style="margin-bottom:14px;" />
         <div class="subjects-grid" id="subjects-grid"></div>
         <div class="quiz-config" id="quiz-config" style="display:none;">
           <h3>Quiz Settings</h3>
@@ -874,7 +887,7 @@ body {
             <button class="btn-secondary" id="btn-prev">← Prev</button>
             <button class="btn-next" id="btn-next">Next →</button>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;">Tip: just say the letter — "A", "B", "C" or "D" — or use keys 1–4</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;">Tip: just say the letter — "A", "B", "C" or "D" — or the full answer, or use keys 1–4</div>
         </div>
       </section>
 
@@ -892,7 +905,9 @@ body {
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
           <button class="btn-primary" style="max-width:180px;" id="btn-retry">🔄 Retry</button>
+          <button class="btn-secondary" id="btn-retry-wrong" style="display:none;">🎯 Retry Wrong Only</button>
           <button class="btn-secondary" id="btn-review-bookmarks" style="display:none;">⭐ Review Bookmarked</button>
+          <button class="btn-secondary" id="btn-share-result">📤 Share Result</button>
           <button class="btn-secondary" id="btn-new-quiz">📚 New Quiz</button>
           <button class="btn-secondary" id="btn-to-dashboard">🏠 Dashboard</button>
         </div>
@@ -1093,6 +1108,8 @@ const ACHIEVEMENTS_CONFIG = [
   { id: 'flashcard_master', name: 'Flashcard Master', icon: '🏅', desc: 'Mark 20 flashcards as known' },
   { id: 'pdf_importer',  name: 'Digitizer',        icon: '📄', desc: 'Import a note from a PDF' },
   { id: 'goal_hit',      name: 'Goal Getter',      icon: '🎯', desc: 'Hit your weekly question goal' },
+  { id: 'voice_commander', name: 'Voice Commander', icon: '🎙️', desc: 'Use 15 voice commands' },
+  { id: 'comeback_kid',  name: 'Comeback Kid',     icon: '📈', desc: 'Improve your average accuracy after a rough patch' },
 ];
 
 /* Persistent store — backed by localStorage so progress, notes and Study
@@ -1126,7 +1143,7 @@ const Store = {
   getStats: () => Store.get('stats', {
     quizzes: 0, totalQ: 0, correct: 0, xp: 0,
     streak: 0, lastDate: '', subjectMap: {}, history: [],
-    achievements: [], studiedSubjects: [], knownFlashcards: 0,
+    achievements: [], studiedSubjects: [], knownFlashcards: 0, voiceCommandCount: 0,
   }),
   setStats: (s) => Store.set('stats', s),
   getSettings: () => Store.get('settings', { theme: 'dark', fontSize: '15px', sound: true, voice: false, listening: true, weeklyGoal: 50 }),
@@ -1146,49 +1163,80 @@ const Voice = {
   shouldListen: false,
   speaking: false,
   permission: 'unknown',
+  lang: 'en-US',
+  restartTimer: null,
+  errorStreak: 0,
+  lastErrorToastAt: 0,
   init() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     this.supported = !!SpeechRec;
+    this.lang = this.pickLanguage();
     if (SpeechRec) {
       this.recognition = new SpeechRec();
-      this.recognition.lang = 'en-GB';
+      this.recognition.lang = this.lang;
       this.recognition.continuous = true;
-      this.recognition.interimResults = false;
-      this.recognition.maxAlternatives = 1;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 3;
       this.recognition.onresult = (e) => {
         const res = e.results[e.results.length - 1];
-        if (res && res.isFinal) VoiceCommands.handle(res[0].transcript);
+        if (!res) return;
+        const transcript = res[0].transcript || '';
+        if (!res.isFinal) { VoiceHUD.showInterim(transcript); return; }
+        VoiceHUD.hide();
+        this.errorStreak = 0;
+        const alternatives = Array.from(res).map(a => a.transcript);
+        VoiceCommands.handle(transcript, alternatives);
       };
       this.recognition.onerror = (e) => {
+        VoiceHUD.hide();
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
           this.permission = 'denied'; this.shouldListen = false; this.listening = false;
           App.updateMicUI();
           UI.toast('Microphone access denied — enable it in your browser settings to use voice.', 'error', 4200);
+          return;
+        }
+        if (e.error === 'no-speech' || e.error === 'aborted') { return; } // routine — restart handled in onend
+        this.errorStreak++;
+        const now = Date.now();
+        if ((e.error === 'network' || e.error === 'audio-capture') && now - this.lastErrorToastAt > 8000) {
+          this.lastErrorToastAt = now;
+          UI.toast(e.error === 'network' ? 'Voice recognition needs an internet connection.' : 'No microphone detected.', 'error', 3000);
         }
       };
       this.recognition.onend = () => {
-        this.listening = false; App.updateMicUI();
-        if (this.shouldListen) setTimeout(() => this.tryStart(), 250);
+        this.listening = false; VoiceHUD.hide(); App.updateMicUI();
+        if (!this.shouldListen) return;
+        // Exponential-ish backoff so a broken mic/service doesn't spin-loop restarts.
+        const delay = this.errorStreak > 6 ? 4000 : this.errorStreak > 2 ? 1500 : 250;
+        clearTimeout(this.restartTimer);
+        this.restartTimer = setTimeout(() => this.tryStart(), delay);
       };
     }
     this.shouldListen = Store.getSettings().listening !== false;
   },
+  pickLanguage() {
+    // Prefer the browser/OS locale so West-African English accents (en-NG) are
+    // matched when available, falling back to broadly-supported locales.
+    const candidates = [navigator.language, 'en-NG', 'en-GB', 'en-US'].filter(Boolean);
+    return candidates[0] || 'en-US';
+  },
   tryStart() {
     if (!this.recognition || this.listening || !this.shouldListen || this.speaking) return;
     try { this.recognition.start(); this.listening = true; this.permission = 'granted'; App.updateMicUI(); }
-    catch { /* already running or blocked — safe to ignore */ }
+    catch { /* already running or blocked — safe to ignore, onend will retry */ }
   },
   enable() {
-    this.shouldListen = true;
+    this.shouldListen = true; this.errorStreak = 0;
     const s = Store.getSettings(); s.listening = true; Store.setSettings(s);
     this.tryStart(); App.updateMicUI();
   },
   disable() {
     this.shouldListen = false;
     const s = Store.getSettings(); s.listening = false; Store.setSettings(s);
-    this.stopListening(); App.updateMicUI();
+    this.stopListening(); VoiceHUD.hide(); App.updateMicUI();
   },
   stopListening() {
+    clearTimeout(this.restartTimer);
     if (this.recognition && this.listening) { try { this.recognition.stop(); } catch {} }
     this.listening = false;
   },
@@ -1198,16 +1246,45 @@ const Voice = {
     if (wasListening) this.stopListening();
     this.synth.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 1.02; utter.pitch = 1; utter.lang = 'en-GB';
+    utter.rate = 1.02; utter.pitch = 1; utter.lang = this.lang;
     utter.onstart = () => { this.speaking = true; };
     utter.onend = () => {
       this.speaking = false;
       if (wasListening && this.shouldListen) setTimeout(() => this.tryStart(), 200);
       if (onEnd) onEnd();
     };
+    utter.onerror = () => { this.speaking = false; if (wasListening && this.shouldListen) setTimeout(() => this.tryStart(), 200); if (onEnd) onEnd(); };
     this.synth.speak(utter);
   },
   stopSpeaking() { if (this.synth) { this.synth.cancel(); this.speaking = false; } }
+};
+
+/* Small floating HUD that shows live interim transcript + a short-lived
+   "heard you" confirmation, so voice control finally feels responsive
+   instead of a black box. */
+const VoiceHUD = {
+  hideTimer: null,
+  showInterim(text) {
+    if (!text || !text.trim()) return;
+    const el = document.getElementById('voice-hud'); const txt = document.getElementById('voice-hud-text');
+    if (!el || !txt) return;
+    txt.textContent = text;
+    el.classList.add('show');
+    clearTimeout(this.hideTimer);
+  },
+  confirm(text) {
+    const el = document.getElementById('voice-hud'); const txt = document.getElementById('voice-hud-text');
+    if (!el || !txt) return;
+    txt.textContent = `✓ ${text}`;
+    el.classList.add('show');
+    clearTimeout(this.hideTimer);
+    this.hideTimer = setTimeout(() => el.classList.remove('show'), 1600);
+  },
+  hide() {
+    const el = document.getElementById('voice-hud'); if (!el) return;
+    clearTimeout(this.hideTimer);
+    this.hideTimer = setTimeout(() => el.classList.remove('show'), 900);
+  }
 };
 
 const VoiceCommands = {
@@ -1234,7 +1311,36 @@ const VoiceCommands = {
     for (const [alias, full] of Object.entries(this.subjectAliases)) { if (text.includes(alias)) return full; }
     return null;
   },
-  handle(raw) {
+  /** Simple normalized-overlap similarity so spoken full answers (not just
+   *  the letter) can be matched against the on-screen option text. */
+  similarity(a, b) {
+    const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const na = norm(a), nb = norm(b);
+    if (!na || !nb) return 0;
+    if (na === nb) return 1;
+    if (na.includes(nb) || nb.includes(na)) return 0.85;
+    const wa = new Set(na.split(/\s+/)); const wb = nb.split(/\s+/);
+    const overlap = wb.filter(w => wa.has(w)).length;
+    return overlap / Math.max(wa.size, wb.length, 1);
+  },
+  tryMatchOptionText(text) {
+    const q = Quiz.questions[Quiz.current]; if (!q) return null;
+    let best = null, bestScore = 0;
+    ['A','B','C','D'].forEach(key => {
+      const score = this.similarity(text, q.options[key]);
+      if (score > bestScore) { bestScore = score; best = key; }
+    });
+    return bestScore >= 0.55 ? best : null;
+  },
+  logCommand() {
+    const stats = Store.getStats(); stats.voiceCommandCount = (stats.voiceCommandCount || 0) + 1;
+    if (stats.voiceCommandCount >= 15) {
+      const achievements = stats.achievements || [];
+      if (!achievements.includes('voice_commander')) { achievements.push('voice_commander'); stats.achievements = achievements; UI.toast('🏅 Achievement unlocked: Voice Commander!', 'success', 4000); }
+    }
+    Store.setStats(stats);
+  },
+  handle(raw, alternatives) {
     const text = raw.toLowerCase().trim().replace(/[.,!?]/g, '');
     if (!text) return;
     const onQuizPage = document.getElementById('page-quiz').classList.contains('active');
@@ -1242,28 +1348,40 @@ const VoiceCommands = {
 
     // Just say the letter — the primary way to answer.
     if (questionActive && !Quiz.locked) {
-      const bare = text.match(/^(?:option |answer |choice |letter )?([abcd])$/);
-      if (bare) { this.clickOption(bare[1].toUpperCase()); return; }
+      const bare = text.match(/^(?:option |answer |choice |letter |the letter )?([abcd])$/);
+      if (bare) { this.logCommand(); VoiceHUD.confirm(`Answer ${bare[1].toUpperCase()}`); this.clickOption(bare[1].toUpperCase()); return; }
       const ord = text.match(/^(?:answer |option |select |choose |pick )?(?:the )?(first|second|third|fourth|one|two|three|four)(?: option)?$/);
-      if (ord) { this.clickOption(this.ordinalMap[ord[1]]); return; }
+      if (ord) { this.logCommand(); const letter = this.ordinalMap[ord[1]]; VoiceHUD.confirm(`Answer ${letter}`); this.clickOption(letter); return; }
+      if (/^(hint|give me a hint)$/.test(text)) { this.logCommand(); this.giveHint(); return; }
+      if (/^(how much time|time left|how long left)/.test(text)) { this.logCommand(); Voice.speak(`${Quiz.timeLeft} seconds left.`); return; }
+      // Fall back to matching the full spoken phrase against option text —
+      // lets a student just say the answer instead of memorising a letter.
+      const pool = (alternatives && alternatives.length ? alternatives : [text]);
+      for (const alt of pool) {
+        const cleaned = alt.toLowerCase().replace(/^(?:answer|option|it'?s|the answer is)\s+/, '').trim();
+        const matched = this.tryMatchOptionText(cleaned);
+        if (matched) { this.logCommand(); VoiceHUD.confirm(`Answer ${matched}`); this.clickOption(matched); return; }
+      }
     }
 
     if (onQuizPage) {
-      if (/^(pause)$/.test(text)) { if (!Quiz.paused) { Quiz.togglePause(); UI.toast('⏸ Paused', 'info', 1300); } return; }
-      if (/^(resume|play|continue)$/.test(text)) { if (Quiz.paused) { Quiz.togglePause(); UI.toast('▶ Resumed', 'info', 1300); } return; }
-      if (/^(next|next question|skip)$/.test(text)) { const b = document.getElementById('btn-next'); if (b && !b.disabled) b.click(); return; }
-      if (/^(previous|go back|back|prev)$/.test(text)) { const b = document.getElementById('btn-prev'); if (b && !b.disabled) b.click(); return; }
-      if (/^(read( the)? question|repeat( that)?)$/.test(text)) { document.getElementById('btn-read-q').click(); return; }
-      if (/^(bookmark( this)?|star this( question)?)$/.test(text)) { document.getElementById('q-bookmark-pill').click(); UI.toast('⭐ Bookmarked', 'info', 1200); return; }
-      if (/^(quit|exit|leave|stop the quiz|stop quiz)$/.test(text)) { UI.navigate('dashboard'); return; }
+      if (/^(pause)$/.test(text)) { if (!Quiz.paused) { this.logCommand(); Quiz.togglePause(); UI.toast('⏸ Paused', 'info', 1300); } return; }
+      if (/^(resume|play|continue)$/.test(text)) { if (Quiz.paused) { this.logCommand(); Quiz.togglePause(); UI.toast('▶ Resumed', 'info', 1300); } return; }
+      if (/^(next|next question|skip)$/.test(text)) { const b = document.getElementById('btn-next'); if (b && !b.disabled) { this.logCommand(); b.click(); } return; }
+      if (/^(previous|go back|back|prev)$/.test(text)) { const b = document.getElementById('btn-prev'); if (b && !b.disabled) { this.logCommand(); b.click(); } return; }
+      if (/^(read( the)? question|repeat( that)?)$/.test(text)) { this.logCommand(); document.getElementById('btn-read-q').click(); return; }
+      if (/^(explain( that| this)?|why( is that)?( the answer)?)$/.test(text)) { this.logCommand(); this.explainCurrent(); return; }
+      if (/^(bookmark( this)?|star this( question)?)$/.test(text)) { this.logCommand(); document.getElementById('q-bookmark-pill').click(); UI.toast('⭐ Bookmarked', 'info', 1200); return; }
+      if (/^(quit|exit|leave|stop the quiz|stop quiz)$/.test(text)) { this.logCommand(); UI.navigate('dashboard'); return; }
     }
 
     const quizMatch = text.match(/(?:quiz me on|start a quiz on|test me on|quiz on)\s+(.+?)(?:\s+(easy|medium|hard))?(?:\s+(\d+)\s*questions?)?$/);
     if (quizMatch) {
       const subjectFragment = quizMatch[1].trim();
-      if (/^(my notes|notes|all my notes)$/.test(subjectFragment)) { App.handleGeneralNotesQuiz(); return; }
+      if (/^(my notes|notes|all my notes)$/.test(subjectFragment)) { this.logCommand(); App.handleGeneralNotesQuiz(); return; }
       const subject = this.resolveSubject(subjectFragment);
       if (!subject) { UI.toast(`Couldn't find a subject called "${subjectFragment}"`, 'error', 3000); return; }
+      this.logCommand();
       App.selectedSubject = subject;
       if (quizMatch[2]) App.selectedDifficulty = quizMatch[2][0].toUpperCase() + quizMatch[2].slice(1);
       if (quizMatch[3]) App.selectedCount = parseInt(quizMatch[3]);
@@ -1281,16 +1399,28 @@ const VoiceCommands = {
       [/^(go to |open |show )?(study buddy|buddy)$/, 'buddy'],
       [/^(go to |open |show )?settings$/, 'settings'],
     ];
-    for (const [regex, page] of navRules) { if (regex.test(text)) { UI.navigate(page); return; } }
+    for (const [regex, page] of navRules) { if (regex.test(text)) { this.logCommand(); UI.navigate(page); return; } }
 
-    if (/^(dark mode|night mode|switch to dark)$/.test(text)) { if (Store.getSettings().theme !== 'dark') App.toggleTheme(); return; }
-    if (/^(light mode|day mode|switch to light)$/.test(text)) { if (Store.getSettings().theme !== 'light') App.toggleTheme(); return; }
-    if (/^(help|what can i say|voice commands|commands)$/.test(text)) { UI.openModal('voice-help-modal'); return; }
-    if (/^(mute|stop listening|turn off( the)? mic)$/.test(text)) { Voice.disable(); UI.toast('🔇 Mic muted', 'info', 1600); return; }
+    if (/^(dark mode|night mode|switch to dark)$/.test(text)) { this.logCommand(); if (Store.getSettings().theme !== 'dark') App.toggleTheme(); return; }
+    if (/^(light mode|day mode|switch to light)$/.test(text)) { this.logCommand(); if (Store.getSettings().theme !== 'light') App.toggleTheme(); return; }
+    if (/^(help|what can i say|voice commands|commands)$/.test(text)) { this.logCommand(); UI.openModal('voice-help-modal'); return; }
+    if (/^(mute|stop listening|turn off( the)? mic)$/.test(text)) { this.logCommand(); Voice.disable(); UI.toast('🔇 Mic muted', 'info', 1600); return; }
 
-    // No match → ignore silently (continuous listening picks up plenty of ambient speech).
+    // No confident match → ignore silently (continuous listening picks up plenty of ambient speech).
   },
-  clickOption(letter) { const li = document.querySelector(`.option-item[data-key="${letter}"]`); if (li) li.click(); }
+  clickOption(letter) { const li = document.querySelector(`.option-item[data-key="${letter}"]`); if (li) li.click(); },
+  giveHint() {
+    const q = Quiz.questions[Quiz.current]; if (!q) return;
+    const wrongKeys = ['A','B','C','D'].filter(k => k !== q.answer);
+    const eliminated = wrongKeys[Math.floor(Math.random() * wrongKeys.length)];
+    Voice.speak(`Here's a hint: option ${eliminated} is not correct.`);
+    UI.toast(`💡 Hint: option ${eliminated} is not the answer`, 'info', 2600);
+  },
+  explainCurrent() {
+    const q = Quiz.questions[Quiz.current]; if (!q) return;
+    if (Quiz.answers[Quiz.current] !== undefined) Voice.speak(q.explanation);
+    else Voice.speak('Answer the question first, then I can explain it.');
+  }
 };
 
 async function withRetry(fn, attempts = 2) {
@@ -1534,7 +1664,7 @@ const UI = {
 const Quiz = {
   questions: [], current: 0, answers: {}, startTime: 0,
   timerInterval: null, timeLeft: 60, subject: '', difficulty: '', totalQuestions: 10, locked: false,
-  fromNotes: false, bookmarked: {}, reviewMode: false, paused: false, inProgress: false,
+  fromNotes: false, bookmarked: {}, reviewMode: false, paused: false, inProgress: false, lastWrongPool: [],
   reset() { this.questions = []; this.current = 0; this.answers = {}; this.locked = false; this.fromNotes = false; this.bookmarked = {}; this.reviewMode = false; this.paused = false; this.inProgress = false; clearInterval(this.timerInterval); },
   startTimer() {
     this.timeLeft = 60; this.paused = false; this.updateTimerDisplay(); this.updatePauseBtn();
@@ -1621,6 +1751,7 @@ const Quiz = {
     let correct = 0; const wrong = [];
     this.questions.forEach((q, i) => { if (this.answers[i] === q.answer) correct++; else wrong.push({ q, chosen: this.answers[i], index: i }); });
     const total = this.questions.length; const pct = Math.round((correct / total) * 100);
+    this.lastWrongPool = wrong.map(w => w.q);
     const bookmarkedQs = Object.keys(this.bookmarked).filter(i => this.bookmarked[i]).map(i => this.questions[i]);
     if (bookmarkedQs.length > 0 && !this.reviewMode) { const existing = Store.getBookmarks(); Store.setBookmarks(existing.concat(bookmarkedQs.map(q => ({ ...q, subject: this.subject, difficulty: this.difficulty })))); }
     if (this.reviewMode) {
@@ -1646,6 +1777,7 @@ const Quiz = {
     App.renderResults(pct, correct, wrong, elapsed, xpEarned);
     UI.navigate('results');
     document.getElementById('btn-review-bookmarks').style.display = Store.getBookmarks().length > 0 ? 'inline-flex' : 'none';
+    document.getElementById('btn-retry-wrong').style.display = wrong.length > 0 ? 'inline-flex' : 'none';
     if (pct >= 70) Confetti.burst();
   },
   startBookmarkReview() {
@@ -1654,6 +1786,17 @@ const Quiz = {
     this.reset(); this.reviewMode = true; this.inProgress = true;
     this.subject = 'Bookmarked Review'; this.difficulty = 'Medium';
     this.questions = bookmarks; this.startTime = Date.now();
+    UI.navigate('quiz');
+    document.getElementById('quiz-loading').style.display = 'none';
+    document.getElementById('quiz-question-wrap').style.display = 'block';
+    this.renderQuestion();
+  },
+  startWrongOnlyReview() {
+    if (!this.lastWrongPool || this.lastWrongPool.length === 0) { UI.toast('No wrong answers to review from your last quiz', 'info'); return; }
+    const subject = this.subject, difficulty = this.difficulty;
+    this.reset(); this.reviewMode = true; this.inProgress = true;
+    this.subject = subject; this.difficulty = difficulty;
+    this.questions = this.lastWrongPool.slice(); this.startTime = Date.now();
     UI.navigate('quiz');
     document.getElementById('quiz-loading').style.display = 'none';
     document.getElementById('quiz-question-wrap').style.display = 'block';
@@ -1740,11 +1883,13 @@ const App = {
     });
 
     document.getElementById('btn-retry').addEventListener('click', () => this.startQuizSession());
+    document.getElementById('btn-retry-wrong').addEventListener('click', () => Quiz.startWrongOnlyReview());
     document.getElementById('btn-new-quiz').addEventListener('click', () => UI.navigate('subjects'));
     document.getElementById('btn-to-dashboard').addEventListener('click', () => UI.navigate('dashboard'));
     document.getElementById('btn-dash-start').addEventListener('click', () => UI.navigate('subjects'));
     document.getElementById('btn-dash-buddy').addEventListener('click', () => UI.navigate('buddy'));
     document.getElementById('btn-review-bookmarks').addEventListener('click', () => Quiz.startBookmarkReview());
+    document.getElementById('btn-share-result').addEventListener('click', () => this.shareResult());
 
     document.getElementById('toggle-dark').addEventListener('click', (e) => {
       const on = e.currentTarget.classList.contains('on'); e.currentTarget.classList.toggle('on', !on);
@@ -1795,6 +1940,7 @@ const App = {
     document.getElementById('notes-filter-subject').addEventListener('change', () => this.renderNotes());
     document.getElementById('btn-import-pdf').addEventListener('click', () => document.getElementById('note-pdf-input').click());
     document.getElementById('note-pdf-input').addEventListener('change', (e) => this.handlePdfImport(e));
+    document.getElementById('subject-search-input').addEventListener('input', () => this.renderSubjectCards(this.currentClass));
 
     const quizDiffPills = document.querySelectorAll('#quiz-config [data-diff]');
     const quizCountPills = document.querySelectorAll('#quiz-config [data-count]');
@@ -1942,8 +2088,11 @@ const App = {
     this.renderSubjectCards(currentClass);
   },
   renderSubjectCards(cls) {
-    const group = cls.startsWith('JSS') ? 'JSS' : 'SS'; const subjects = SUBJECTS[group];
+    const group = cls.startsWith('JSS') ? 'JSS' : 'SS'; let subjects = SUBJECTS[group];
+    const searchTerm = (document.getElementById('subject-search-input')?.value || '').toLowerCase().trim();
+    if (searchTerm) subjects = subjects.filter(s => s.name.toLowerCase().includes(searchTerm));
     const grid = document.getElementById('subjects-grid');
+    if (subjects.length === 0) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><span class="empty-icon">🔍</span>No subjects match your search.</div>`; return; }
     grid.innerHTML = subjects.map(s => `<div class="subject-card ${this.selectedSubject === s.name ? 'selected' : ''}" data-subject="${s.name}"><span class="subject-emoji">${s.emoji}</span><div class="subject-name">${s.name}</div></div>`).join('');
     grid.querySelectorAll('.subject-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -2023,6 +2172,16 @@ const App = {
     if (weakTopics.length > 0) { suggestSection.style.display = 'block'; document.getElementById('suggest-list').innerHTML = weakTopics.map(t => `<span class="suggest-tag">${t}</span>`).join(''); }
     else suggestSection.style.display = 'none';
     document.getElementById('btn-review-bookmarks').style.display = Store.getBookmarks().length > 0 ? 'inline-flex' : 'none';
+    document.getElementById('btn-retry-wrong').style.display = wrong.length > 0 ? 'inline-flex' : 'none';
+    this._lastResultSummary = { pct, correct, total, elapsed, subject: Quiz.subject, difficulty: Quiz.difficulty };
+  },
+  async shareResult() {
+    const r = this._lastResultSummary; if (!r) return;
+    const profile = Store.getProfile();
+    const text = `${profile ? profile.name.split(' ')[0] + ' scored' : 'I scored'} ${r.pct}% (${r.correct}/${r.total}) on a ${r.difficulty} ${r.subject} quiz in ${UI.formatTime(r.elapsed)} on Revision Hub AI! 🎓`;
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch { /* user cancelled — fall through to clipboard */ } }
+    try { await navigator.clipboard.writeText(text); UI.toast('📋 Result copied to clipboard!', 'success', 2400); }
+    catch { UI.toast(text, 'info', 5000); }
   },
   renderAnalytics() {
     const stats = Store.getStats(); const accuracy = stats.totalQ > 0 ? Math.round((stats.correct / stats.totalQ) * 100) : 0;
@@ -2067,6 +2226,11 @@ const App = {
       <div class="stat-card emerald"><span class="stat-icon">📅</span><div class="stat-value">${weeklyQ}</div><div class="stat-label">Questions This Week</div></div>
       <div class="stat-card amber"><span class="stat-icon">🔥</span><div class="stat-value">${stats.streak}</div><div class="stat-label">Day Streak</div></div>`;
 
+    if (trend.trend === 'up' && trend.priorPct !== null && trend.priorPct < 60 && trend.recentPct >= 70) {
+      const achievements = stats.achievements || [];
+      if (!achievements.includes('comeback_kid')) { achievements.push('comeback_kid'); stats.achievements = achievements; Store.setStats(stats); UI.toast('🏅 Achievement unlocked: Comeback Kid!', 'success', 4000); }
+    }
+
     /* --- Focus subject spotlight --- */
     const focusCard = document.getElementById('buddy-focus-card');
     if (weak.length === 0) {
@@ -2077,7 +2241,7 @@ const App = {
         <div class="focus-spotlight">
           <div class="fs-label">🎯 Focus Subject This Week</div>
           <div class="fs-sub">${focus.sub} — ${focus.pct}%</div>
-          <div class="fs-detail">Your weakest area right now, based on ${focus.total} question${focus.total===1?'':'s'} answered. A focused 10-question session here will move the needle fastest.</div>
+          <div class="fs-detail">Your weakest area right now, based on ${focus.total} question${focus.total===1?'':'s'} answered. A focused 10-question session here will move the needle fastest. You can also just say "quiz me on ${focus.sub}".</div>
           <button class="btn-primary" data-practice-subject="${focus.sub}">🚀 Practice ${focus.sub} Now</button>
         </div>`;
     }

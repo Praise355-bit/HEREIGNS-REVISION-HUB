@@ -1430,7 +1430,7 @@ async function withRetry(fn, attempts = 2) {
 }
 
 const Groq = {
-  proxyURL: '/api/groq',
+  proxyURL: '/api/gemini',
   async chat(prompt, { temperature = 0.6, max_tokens = 2048 } = {}) {
     try {
       const resp = await fetch(this.proxyURL, {

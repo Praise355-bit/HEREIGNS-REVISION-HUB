@@ -4,6 +4,7 @@
 
 export const config = { runtime: 'edge' };
 
+// ✅ CORRECTED: Use a model that is officially supported by the OpenAI-compatible endpoint.
 const MODEL = 'gemini-2.5-flash'; 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 

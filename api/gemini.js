@@ -4,7 +4,7 @@
 
 export const config = { runtime: 'edge' };
 
-const MODEL = 'gemini-3.8-flash'; 
+const MODEL = 'gemini-2.5-flash'; 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
 // Read keys from a single env var: comma-separated list.

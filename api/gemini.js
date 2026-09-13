@@ -18,7 +18,7 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const REQUEST_TIMEOUT_MS = 30000;
 
-const KEYS = (process.env.GEMINI_KEYS || '')
+const KEYS = (process.env.GEMINI_API_KEYS || '')
   .split(',')
   .map((k) => k.trim())
   .filter(Boolean);

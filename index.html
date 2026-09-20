@@ -2548,7 +2548,7 @@ const App = {
       UI.toast('Timer set to ' + val + ' seconds per question', 'success', 1800);
     });
     on('api-endpoint-input', 'change', (e) => {
-      const val = (e.target.value || '').trim() || '/api/gemini';
+      const val = (e.target.value || '').trim() || '/api/openrouter';
       e.target.value = val; Store.patchSettings({ apiEndpoint: val });
       UI.toast('AI endpoint saved', 'success', 1800);
     });

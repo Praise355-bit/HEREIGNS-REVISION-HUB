@@ -11,7 +11,7 @@ const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const REQUEST_TIMEOUT_MS = 30000;
 
 // Your OpenRouter API key, read from Vercel's environment variables.
-const API_KEY = process.env.OPENROUTER_API_KEY;
+const API_KEY = process.env.OPENROUTER_API_KEYS;
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {

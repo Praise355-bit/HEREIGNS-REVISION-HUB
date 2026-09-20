@@ -1144,7 +1144,7 @@ const SUBJECT_EMOJI = {};
 SUBJECTS.JSS.concat(SUBJECTS.SS).forEach(s => { SUBJECT_EMOJI[s.name] = s.emoji; });
 
 const JSS_ARMS = ['A', 'B', 'C', 'D', 'E'];
-const SS_ARMS  = ['Science', 'Art', 'Commercial', 'A', 'B', 'C'];
+const SS_ARMS  = ['Science', 'Art', 'Commercial',];
 
 const QUOTES = [
   { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
@@ -1662,7 +1662,7 @@ async function withRetry(fn, attempts = 2) {
 }
 
 const AI = {
-  get endpoint() { return Store.getSettings().apiEndpoint || '/api/gemini'; },
+  get endpoint() { return Store.getSettings().apiEndpoint || '/api/openrouter'; },
   async chat(prompt, opts) {
     const o = opts || {};
     const temperature = o.temperature === undefined ? 0.6 : o.temperature;

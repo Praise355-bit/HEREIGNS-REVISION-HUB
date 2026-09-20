@@ -1662,7 +1662,7 @@ async function withRetry(fn, attempts = 2) {
 }
 
 const AI = {
-  get endpoint() { return Store.getSettings().apiEndpoint || '/api/openrouter'; },
+  get endpoint() { return Store.getSettings().apiEndpoint || '/api/gemini'; },
   async chat(prompt, opts) {
     const o = opts || {};
     const temperature = o.temperature === undefined ? 0.6 : o.temperature;
@@ -2548,7 +2548,7 @@ const App = {
       UI.toast('Timer set to ' + val + ' seconds per question', 'success', 1800);
     });
     on('api-endpoint-input', 'change', (e) => {
-      const val = (e.target.value || '').trim() || '/api/openrouter';
+      const val = (e.target.value || '').trim() || '/api/gemini';
       e.target.value = val; Store.patchSettings({ apiEndpoint: val });
       UI.toast('AI endpoint saved', 'success', 1800);
     });

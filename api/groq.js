@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEYS;
   if (!apiKey) {
     // This means the env var wasn't set in the Vercel dashboard — see setup steps.
-    return res.status(500).json({ error: 'Server misconfigured: GROQ_API_KEY missing' });
+    return res.status(500).json({ error: 'Server misconfigured: GROQ_API_KEYS missing' });
   }
 
   // Optional but recommended: only allow requests from your own site,

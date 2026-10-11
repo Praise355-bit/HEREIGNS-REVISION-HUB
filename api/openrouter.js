@@ -1,98 +1,48 @@
-// api/openrouter.js
-// Vercel Edge Function — proxies chat requests to OpenRouter.
+// api/groq.js
+// Vercel Serverless Function — proxies requests to Groq so the API key
+// never reaches the browser. Deploy this file as-is inside an /api folder
+// at your project root (Vercel auto-detects it, no config needed).
 
-export const config = { runtime: 'edge' };
-
-// You can change this to any model available on OpenRouter.
-// See the full list here: https://openrouter.ai/models
-const MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
-
-const BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const REQUEST_TIMEOUT_MS = 30000;
-
-// Your OpenRouter API key, read from Vercel's environment variables.
-const API_KEY = process.env.OPENROUTER_API_KEYS;
-
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-async function fetchWithTimeout(url, options, timeoutMs) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
-  }
-  if (!API_KEY) {
-    return json({ error: 'No API key configured on the server' }, 500);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    // This means the env var wasn't set in the Vercel dashboard — see setup steps.
+    return res.status(500).json({ error: 'Server misconfigured: GROQ_API_KEY missing' });
   }
 
-  const { prompt, temperature = 0.6, max_tokens = 2048 } = body || {};
-  if (!prompt || typeof prompt !== 'string') {
-    return json({ error: 'Missing prompt' }, 400);
+  // Optional but recommended: only allow requests from your own site,
+  // so people can't point random apps at your proxy and burn your quota.
+  const allowedOrigin = process.env.ALLOWED_ORIGIN; // e.g. "https://your-site.vercel.app"
+  const origin = req.headers.origin || '';
+  if (allowedOrigin && origin !== allowedOrigin) {
+    return res.status(403).json({ error: 'Forbidden origin' });
   }
-  const safeTemp = Math.min(Math.max(Number(temperature) || 0.6, 0), 2);
-  const safeMaxTokens = Math.min(Math.max(parseInt(max_tokens, 10) || 2048, 1), 8192);
 
   try {
-    const resp = await fetchWithTimeout(
-      BASE_URL,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${API_KEY}`,
-          // These headers are optional but recommended by OpenRouter.
-          // They help identify your app on their rankings.
-          'HTTP-Referer': process.env.YOUR_SITE_URL || '',
-          'X-OpenRouter-Title': process.env.YOUR_SITE_NAME || 'MyApp',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: safeTemp,
-          max_tokens: safeMaxTokens,
-        }),
+    const body = { ...req.body };
+
+    // Optional but recommended: cap max_tokens server-side so a malicious
+    // or buggy client can't run up a huge bill on your key.
+    if (!body.max_tokens || body.max_tokens > 4096) {
+      body.max_tokens = 4096;
+    }
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
-      REQUEST_TIMEOUT_MS
-    );
+      body: JSON.stringify(body),
+    });
 
-    if (!resp.ok) {
-      const errData = await resp.json().catch(() => ({}));
-      return json(
-        { error: errData.error?.message || `API error ${resp.status}` },
-        resp.status
-      );
-    }
-
-    const data = await resp.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    if (!content) {
-      return json({ error: 'AI returned an empty response' }, 502);
-    }
-    return json({ content });
+    const data = await groqRes.json();
+    return res.status(groqRes.status).json(data);
   } catch (err) {
-    const message = err.name === 'AbortError'
-      ? 'Request to OpenRouter timed out'
-      : (err.message || 'Network error contacting OpenRouter');
-    return json({ error: message }, 503);
+    return res.status(500).json({ error: err.message });
   }
 }
